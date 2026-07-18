@@ -1,0 +1,21 @@
+Software Engineer – Backend Platform
+
+We are looking for a backend software engineer to join our platform team.
+
+Required:
+- 3+ years of professional Python experience
+- Experience building and maintaining REST APIs (Flask, FastAPI, or Django)
+- Solid understanding of SQL databases (PostgreSQL preferred)
+- Experience with containerization using Docker
+- Familiarity with CI/CD pipelines (GitHub Actions, Jenkins, or similar)
+
+Preferred:
+- Experience with Kubernetes or other container orchestration platforms
+- Cloud experience (AWS, GCP, or Azure)
+- Experience with message queues (RabbitMQ, Kafka, or SQS)
+- Knowledge of distributed systems design patterns
+
+About the role:
+You will design, build, and maintain the APIs and infrastructure that power our core product.
+You will work closely with the product team to deliver new features and ensure reliability.
+Strong communication skills and ability to work in a cross-functional team are important.

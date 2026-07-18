@@ -1,0 +1,40 @@
+You are evaluating ONE job requirement against retrieved resume evidence.
+
+Requirement: {requirement}   (importance: {importance})
+
+Evidence chunks from the resume:
+{retrieved_chunks}
+
+Rules:
+1. Use ONLY the supplied evidence. You have no other knowledge of this candidate.
+2. Do not infer a skill that is not present.
+3. Quote your evidence VERBATIM from the text above. Copy it exactly, character for
+   character. Quotes are checked against the source and a mismatch zeroes your score.
+4. Partial evidence receives a partial score.
+5. If there is no evidence, score 0.0 and return an empty evidence list.
+6. Report a CONFIDENCE in your own score (0.0-1.0). This is not the same as the score:
+   - A confident 0.0 ("the resume plainly does not mention this") is HIGH confidence.
+   - An uncertain 1.0 is LOW confidence and must be reported as such.
+   Lower your confidence when: seniority is unclear, the evidence is adjacent rather than
+   direct, the resume names a tool without showing use, or the requirement is vague.
+7. Do NOT output a status field.
+8. Return valid JSON only.
+
+Scoring scale:
+- 1.0: Clearly supported
+- 0.75: Mostly supported
+- 0.5: Partially supported
+- 0.25: Weak or indirect evidence
+- 0.0: Not supported
+
+Return JSON with this exact structure:
+{{
+  "requirement_id": "{requirement_id}",
+  "requirement": "{requirement}",
+  "importance": "{importance}",
+  "score": 0.0,
+  "confidence": 0.0,
+  "evidence": [],
+  "reason": "...",
+  "retrieved_chunk_ids": []
+}}

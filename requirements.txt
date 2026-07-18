@@ -1,0 +1,11 @@
+streamlit
+pymupdf
+pydantic>=2.0
+faiss-cpu
+rank-bm25
+numpy
+python-dotenv
+openai
+anthropic
+google-genai
+tiktoken

@@ -1,0 +1,28 @@
+You are analysing a job description.
+
+Extract individual candidate requirements.
+
+Rules:
+1. Separate required and preferred requirements.
+2. Remove duplicates.
+3. Do not invent requirements that are not in the text.
+4. Keep every requirement specific and independently checkable.
+5. Use only the allowed categories: technical_skill, experience, education, domain_knowledge, soft_skill, responsibility
+6. Use only the allowed importance values: required, preferred, unknown
+7. Return valid JSON only.
+
+Return JSON with this exact structure:
+{{
+  "requirements": [
+    {{
+      "id": "R1",
+      "requirement": "Strong Python programming experience",
+      "category": "technical_skill",
+      "importance": "required"
+    }},
+    ...
+  ]
+}}
+
+Job Description:
+{job_description}

@@ -1,0 +1,45 @@
+You are auditing a resume-to-job analysis. Assume the analysis is WRONG.
+
+You are given:
+- The FULL resume text
+- Requirements, each with a score and the evidence quoted for it
+
+You are NOT given the original reasoning. Form your own judgment.
+
+For each requirement, find the strongest argument that the score is wrong - IN EITHER DIRECTION.
+
+TOO HIGH if:
+- The evidence names the term but does not demonstrate the capability
+- The evidence is academic/hobby/coursework and the requirement implies professional work
+- A tool was inferred rather than stated
+- A preferred requirement was scored as if mandatory
+
+TOO LOW if:
+- The FULL resume contains supporting evidence that was never quoted (retrieval missed it)
+- The requirement was flagged low_retrieval_confidence
+
+If you cannot find a strong argument, say so explicitly and leave the score unchanged.
+Do not invent resume facts. Every RAISED score must quote verbatim resume text - your
+quotes are checked against the source.
+
+Full resume text:
+{resume_text}
+
+Requirements to audit:
+{requirements_json}
+
+Return valid JSON only with this exact structure:
+{{
+  "approved": false,
+  "changed_requirements": [
+    {{
+      "requirement_id": "R3",
+      "old_score": 1.0,
+      "new_score": 0.25,
+      "direction": "lowered",
+      "reason": "Evidence names the term but does not demonstrate use.",
+      "new_evidence": []
+    }}
+  ],
+  "review_notes": ["Summary of what was changed and why."]
+}}

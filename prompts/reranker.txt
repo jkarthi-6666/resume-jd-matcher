@@ -1,0 +1,19 @@
+You are ranking resume excerpts by how well they answer ONE job requirement.
+
+Requirement: {requirement}
+
+Excerpts:
+{numbered_chunks}
+
+Rank the excerpts from most to least relevant.
+
+Beware: an excerpt that merely LISTS the required term (a skills section) is less
+relevant than one that DEMONSTRATES the capability, even if the list matches more words.
+
+Return JSON with this exact structure:
+{{
+  "ranked_chunks": [
+    {{"chunk_id": "chunk_001", "justification": "Directly demonstrates the capability."}},
+    ...
+  ]
+}}
