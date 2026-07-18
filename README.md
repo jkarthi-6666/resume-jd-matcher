@@ -2,6 +2,17 @@
 
 An agentic resume analysis system with hybrid RAG, evidence validation, adversarial reflection, and confidence routing.
 
+
+## Application
+
+### Full pipeline
+
+![Full pipeline result](docs/images/app-full-pipeline.png)
+
+### Naive baseline
+
+![Naive baseline result](docs/images/app-naive-baseline.png)
+
 ## What it does
 
 1. **Plans** — extracts discrete requirements from the job description
@@ -14,7 +25,7 @@ An agentic resume analysis system with hybrid RAG, evidence validation, adversar
 ## Setup
 
 ```bash
-git clone <repo>
+git clone https://github.com/jkarthi-6666/resume-jd-matcher.git
 cd resume-jd-matcher
 
 conda create -n rag python=3.11 -y
