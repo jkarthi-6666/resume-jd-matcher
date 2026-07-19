@@ -7,9 +7,12 @@ Rules:
 2. Remove duplicates.
 3. Do not invent requirements that are not in the text.
 4. Keep every requirement specific and independently checkable.
-5. Use only the allowed categories: technical_skill, experience, education, domain_knowledge, soft_skill, responsibility
-6. Use only the allowed importance values: required, preferred, unknown
-7. Return valid JSON only.
+5. Preserve the exact strength, seniority, duration, and depth stated in the job
+   description. Do not rewrite "experience with" as "proficiency", "expertise",
+   "strong experience", or another stricter requirement.
+6. Use only the allowed categories: technical_skill, experience, education, domain_knowledge, soft_skill, responsibility
+7. Use only the allowed importance values: required, preferred, unknown
+8. Return valid JSON only.
 
 Return JSON with this exact structure:
 {{

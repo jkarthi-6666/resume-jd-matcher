@@ -10,8 +10,15 @@ Rules:
 2. Do not infer a skill that is not present.
 3. Quote your evidence VERBATIM from the text above. Copy it exactly, character for
    character. Quotes are checked against the source and a mismatch zeroes your score.
+   Do not add quotation-mark characters around the copied text unless those characters
+   are themselves present in the resume.
 4. Partial evidence receives a partial score.
-5. If there is no evidence, score 0.0 and return an empty evidence list.
+5. Distinguish WEAK evidence from NO evidence:
+   - A relevant keyword listed without demonstrated use is weak evidence: score 0.25
+     and quote the listing.
+   - Academic or personal-project evidence for a professional-experience requirement
+     is weak evidence: score 0.25 and quote it.
+   - Use 0.0 with an empty evidence list only when there is no relevant evidence at all.
 6. Report a CONFIDENCE in your own score (0.0-1.0). This is not the same as the score:
    - A confident 0.0 ("the resume plainly does not mention this") is HIGH confidence.
    - An uncertain 1.0 is LOW confidence and must be reported as such.
@@ -27,8 +34,9 @@ Scoring scale:
 - 1.0: Clearly supported
 - 0.75: Mostly supported
 - 0.5: Partially supported
-- 0.25: Weak or indirect evidence
-- 0.0: Not supported
+- 0.25: Relevant but weak or indirect evidence (keyword-only, academic for a
+  professional requirement, or adjacent experience)
+- 0.0: No relevant evidence at all
 
 Return JSON with this exact structure:
 {{

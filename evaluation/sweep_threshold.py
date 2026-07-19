@@ -1,4 +1,4 @@
-"""Sweep confidence threshold and plot escalation-precision curve."""
+"""Sweep confidence threshold and report the resulting escalation rate."""
 import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))

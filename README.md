@@ -50,7 +50,7 @@ Upload a PDF resume, paste a job description, click Analyse.
 pytest tests/ -v
 ```
 
-75 tests, no API key or network required — every model and embedding call is
+97 tests, no API key or network required — every model and embedding call is
 mocked at the provider-agnostic seam (`src.llm.call`, `src.embeddings.get_embeddings`).
 `tests/conftest.py` installs an autouse guard that fails any test which reaches
 a real provider, so a mock patched at the wrong layer surfaces immediately
@@ -115,7 +115,7 @@ src/
   reranker.py      LLM rerank
   planner.py       JD → requirements (cached)
   scorer.py        Per-requirement scoring
-  validate.py      Evidence substring check
+  validate.py      Evidence checks, status, guarded confidence calibration
   calculator.py    Weighted score (Python)
   reflector.py     Adversarial critic
   router.py        Verdict routing

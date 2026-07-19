@@ -74,6 +74,9 @@ class ReflectionResult(BaseModel):
     approved: bool
     changed_requirements: list[Correction]
     review_notes: list[str]
+    # Internal reliability signal. LLM responses omit it and therefore default
+    # to True; reflector.py sets it False when both audit attempts fail.
+    completed: bool = True
 
 
 class FinalReport(BaseModel):

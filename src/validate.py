@@ -8,6 +8,16 @@ def normalize(s: str) -> str:
     return re.sub(r"\s+", " ", s.lower().strip())
 
 
+def clean_evidence_quote(quote: str) -> str:
+    """Remove presentation-only quote delimiters before exact validation."""
+    cleaned = quote.strip()
+    pairs = (("\"", "\""), ("'", "'"), ("“", "”"), ("‘", "’"))
+    for opening, closing in pairs:
+        if len(cleaned) >= 2 and cleaned.startswith(opening) and cleaned.endswith(closing):
+            return cleaned[len(opening):-len(closing)].strip()
+    return cleaned
+
+
 def invalid_evidence_quotes(evidence: list[str], chunks: list[Chunk]) -> list[str]:
     """Quotes that are not substrings of the given chunks."""
     corpus = normalize(" ".join(c.embed_text for c in chunks))
@@ -19,7 +29,7 @@ def validate_evidence(
     retrieved_chunks: list[Chunk],
 ) -> RequirementAnalysis:
     """Every positive claim must be backed by a quote found in the resume text."""
-    cleaned = [q.strip() for q in analysis.evidence if q.strip()]
+    cleaned = [clean_evidence_quote(q) for q in analysis.evidence if q.strip()]
     analysis.evidence = cleaned
 
     # A positive score with nothing to back it is unsupported by definition.
@@ -76,3 +86,25 @@ def derive_status(analysis: RequirementAnalysis) -> RequirementAnalysis:
         analysis.status = "missing"
 
     return analysis
+
+
+def calibrate_confidence(
+    analysis: RequirementAnalysis,
+    full_resume_audit_completed: bool,
+) -> RequirementAnalysis:
+    """Turn confidence into a deterministic routing signal after reflection.
+
+    Model confidence is retained for genuinely uncertain cases. It is lifted to
+    the routing floor only when all independent safeguards succeeded: evidence
+    state is valid, hybrid retrieval was not flagged as weak, and the critic
+    completed a full-resume audit. For a zero score, valid empty evidence means
+    the scorer made no positive claim and the full-resume audit found no reason
+    to correct it.
+    """
+    if (
+        full_resume_audit_completed
+        and analysis.evidence_valid is True
+        and not analysis.low_retrieval_confidence
+    ):
+        analysis.confidence = max(analysis.confidence, config.CONFIDENCE_FLOOR)
+    return derive_status(analysis)

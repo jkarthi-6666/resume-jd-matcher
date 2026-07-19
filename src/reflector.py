@@ -52,6 +52,7 @@ def reflect(
                     approved=True,
                     changed_requirements=[],
                     review_notes=["Reflection failed after retry — pre-reflection report used."],
+                    completed=False,
                 )
                 return analyses, null_result
 
@@ -60,6 +61,7 @@ def reflect(
             approved=True,
             changed_requirements=[],
             review_notes=["Reflection produced no result."],
+            completed=False,
         )
         return analyses, null_result
 
