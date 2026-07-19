@@ -159,11 +159,6 @@ extracted, but the application cannot process them.
 
 ## Open Work
 
-- [x] Create an executable five-case synthetic evaluation baseline.
-- [x] Measure quote fabrication and unsupported positive matches on that baseline.
-- [x] Record raised and lowered reflection corrections on that baseline.
-- [x] Add guarded post-reflection confidence calibration.
-- [x] Align weak-evidence scoring across the scorer and reflector.
 - [ ] Expand evaluation to representative anonymized or consented resumes.
 - [ ] Calibrate confidence against representative human-reviewed outcomes.
 - [ ] Report verdict accuracy and escalation precision at each confidence floor.
