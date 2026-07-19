@@ -17,6 +17,9 @@ Rules:
    - An uncertain 1.0 is LOW confidence and must be reported as such.
    Lower your confidence when: seniority is unclear, the evidence is adjacent rather than
    direct, the resume names a tool without showing use, or the requirement is vague.
+   Choose confidence independently for this case. Do not copy the illustrative value
+   from the output structure. Use 0.0 only when no reliable judgment can be made at all;
+   clear direct evidence or a clear absence should normally have high confidence.
 7. Do NOT output a status field.
 8. Return valid JSON only.
 
@@ -33,7 +36,7 @@ Return JSON with this exact structure:
   "requirement": "{requirement}",
   "importance": "{importance}",
   "score": 0.0,
-  "confidence": 0.0,
+  "confidence": 0.8,
   "evidence": [],
   "reason": "...",
   "retrieved_chunk_ids": []

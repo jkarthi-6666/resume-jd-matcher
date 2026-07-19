@@ -15,3 +15,7 @@ venv/
 
 *.faiss
 *.pkl
+
+# Local one-case evaluation smoke outputs (full results are tracked separately)
+evaluation/case_*-results.json
+evaluation/case_*-results.md

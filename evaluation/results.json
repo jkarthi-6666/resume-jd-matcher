@@ -1,0 +1,556 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-19T04:53:57.147888+00:00",
+  "mode": "full",
+  "metrics": {
+    "total_cases": 5,
+    "completed_cases": 5,
+    "skipped_cases": 0,
+    "failed_cases": 0,
+    "score_mae": 11.12,
+    "verdict_accuracy": 0.2,
+    "escalation_rate": 0.8,
+    "false_accept_count": 0,
+    "false_reject_count": 1,
+    "hallucinated_quote_rate": 0.0,
+    "unsupported_match_rate": 0.0,
+    "raised_correction_count": 0,
+    "lowered_correction_count": 1
+  },
+  "cases": [
+    {
+      "case_id": "case_001",
+      "description": "Strong match - senior backend engineer",
+      "expected_verdict": "accept",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Python experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R2",
+          "requirement": "REST API experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R3",
+          "requirement": "PostgreSQL experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R4",
+          "requirement": "Docker experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R5",
+          "requirement": "Kubernetes experience",
+          "importance": "preferred",
+          "ground_truth_score": 0.5,
+          "ground_truth_evidence_exists": true
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "verdict": "needs_review",
+        "review_reason": "Could not confidently assess 'Strong Python development experience'. The resume explicitly mentions multiple roles where the candidate built and developed Python services and APIs, and lists Python as a skill, indicating strong Python development experience.",
+        "match_score": 100.0,
+        "score_pre_reflection": 100.0,
+        "score_post_reflection": 100.0,
+        "reflection_delta": 0.0,
+        "all_requirements": [
+          {
+            "requirement_id": "R1",
+            "requirement": "Strong Python development experience",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Built Python REST APIs serving customer-facing workflows and integrated PostgreSQL for transactional storage.",
+              "Developed Python services, reviewed API designs, and improved database query performance.",
+              "Python, Flask, REST APIs, PostgreSQL, Docker, Kubernetes"
+            ],
+            "reason": "The resume explicitly mentions multiple roles where the candidate built and developed Python services and APIs, and lists Python as a skill, indicating strong Python development experience.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_003",
+              "chunk_004"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R2",
+            "requirement": "Experience with REST API development",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Built Python REST APIs serving customer-facing workflows and integrated PostgreSQL for transactional storage.",
+              "Python, Flask, REST APIs, PostgreSQL, Docker, Kubernetes"
+            ],
+            "reason": "The candidate explicitly built Python REST APIs (chunk_002) and lists REST APIs among their skills (chunk_004), providing clear evidence of experience with REST API development.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_004",
+              "chunk_003"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R3",
+            "requirement": "Experience with PostgreSQL",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Built Python REST APIs serving customer-facing workflows and integrated PostgreSQL for transactional storage.",
+              "Python, Flask, REST APIs, PostgreSQL, Docker, Kubernetes"
+            ],
+            "reason": "The resume explicitly states that the candidate integrated PostgreSQL for transactional storage and also lists PostgreSQL among their skills, providing clear evidence of experience.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_004",
+              "chunk_003"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R4",
+            "requirement": "Experience with Docker",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Containerized services with Docker and maintained automated deployment pipelines.",
+              "Docker"
+            ],
+            "reason": "The resume explicitly states that the candidate containerized services with Docker and lists Docker in the skills section, providing clear evidence of Docker experience.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_004",
+              "chunk_001"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R5",
+            "requirement": "Experience with Kubernetes",
+            "importance": "preferred",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Supported a Kubernetes migration and monitored production workloads after launch.",
+              "Python, Flask, REST APIs, PostgreSQL, Docker, Kubernetes"
+            ],
+            "reason": "The resume explicitly states the candidate supported a Kubernetes migration and monitored workloads, and lists Kubernetes among their skills, providing clear evidence of experience.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_004",
+              "chunk_001"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          }
+        ],
+        "corrections": [],
+        "recommendation": "Overall match: 100/100. 5 requirement(s) could not be confidently assessed. Recommend human review before decision.",
+        "reflection_notes": [
+          "No strong arguments found to adjust any scores; all evidence directly supports the requirements."
+        ]
+      },
+      "diagnostics": {
+        "evidence_quote_count": 11,
+        "invalid_evidence_quote_count": 0,
+        "positive_requirement_count": 5,
+        "unsupported_positive_count": 0,
+        "raised_correction_count": 0,
+        "lowered_correction_count": 0
+      }
+    },
+    {
+      "case_id": "case_002",
+      "description": "Missing required cloud skill",
+      "expected_verdict": "reject",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Python experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R2",
+          "requirement": "REST API experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R3",
+          "requirement": "AWS experience",
+          "importance": "required",
+          "ground_truth_score": 0.0,
+          "ground_truth_evidence_exists": false
+        },
+        {
+          "id": "R4",
+          "requirement": "Kubernetes experience",
+          "importance": "preferred",
+          "ground_truth_score": 0.0,
+          "ground_truth_evidence_exists": false
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "verdict": "needs_review",
+        "review_reason": "Could not confidently assess 'Hands\u2011on AWS cloud experience'. None of the provided resume chunks mention AWS, cloud services, or related experience.",
+        "match_score": 57.1,
+        "score_pre_reflection": 57.1,
+        "score_post_reflection": 57.1,
+        "reflection_delta": 0.0,
+        "all_requirements": [
+          {
+            "requirement_id": "R1",
+            "requirement": "Python programming experience",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Designed and maintained Python REST APIs for internal operations teams.",
+              "Implemented backend features in Python and supported on-premises Linux deployments.",
+              "Application developer focused on Python web services and relational database systems."
+            ],
+            "reason": "The resume explicitly mentions multiple instances of Python development work, indicating clear Python programming experience.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_003",
+              "chunk_001"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R2",
+            "requirement": "REST API development experience",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Designed and maintained Python REST APIs for internal operations teams.",
+              "Built a small Flask and PostgreSQL inventory application."
+            ],
+            "reason": "The resume explicitly states that the candidate designed and maintained Python REST APIs, providing clear evidence of REST API development experience. An additional project involving Flask further supports web service development.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_004",
+              "chunk_001"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R3",
+            "requirement": "Hands\u2011on AWS cloud experience",
+            "importance": "required",
+            "score": 0.0,
+            "confidence": 0.0,
+            "evidence": [],
+            "reason": "None of the provided resume chunks mention AWS, cloud services, or related experience.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_003",
+              "chunk_004"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R4",
+            "requirement": "Kubernetes experience",
+            "importance": "preferred",
+            "score": 0.0,
+            "confidence": 0.1,
+            "evidence": [],
+            "reason": "None of the provided resume chunks mention Kubernetes or related container orchestration tools; the evidence only references Python development, Linux deployments, Flask, and PostgreSQL.",
+            "retrieved_chunk_ids": [
+              "chunk_003",
+              "chunk_002",
+              "chunk_004"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          }
+        ],
+        "corrections": [],
+        "recommendation": "Overall match: 57/100. 4 requirement(s) could not be confidently assessed. Recommend human review before decision.",
+        "reflection_notes": [
+          "No requirements required score adjustments; all scores are appropriate based on the resume evidence."
+        ]
+      },
+      "diagnostics": {
+        "evidence_quote_count": 5,
+        "invalid_evidence_quote_count": 0,
+        "positive_requirement_count": 2,
+        "unsupported_positive_count": 0,
+        "raised_correction_count": 0,
+        "lowered_correction_count": 0
+      }
+    },
+    {
+      "case_id": "case_003",
+      "description": "Keyword only - no demonstrated use",
+      "expected_verdict": "needs_review",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Hands-on production Kubernetes experience",
+          "importance": "required",
+          "ground_truth_score": 0.25,
+          "ground_truth_evidence_exists": true,
+          "notes": "The keyword is listed, but no deployment or operational use is demonstrated."
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "verdict": "needs_review",
+        "review_reason": "Could not confidently assess 'Hands\u2011on production Kubernetes experience, including deploying or operating workloads'. Kubernetes is listed in the Skills section, but there is no explicit mention of hands\u2011on production use, deployment, or operation of workloads.",
+        "match_score": 0.0,
+        "score_pre_reflection": 25.0,
+        "score_post_reflection": 0.0,
+        "reflection_delta": -25.0,
+        "all_requirements": [
+          {
+            "requirement_id": "R1",
+            "requirement": "Hands\u2011on production Kubernetes experience, including deploying or operating workloads",
+            "importance": "required",
+            "score": 0.0,
+            "confidence": 0.6,
+            "evidence": [],
+            "reason": "Kubernetes is listed in the Skills section, but there is no explicit mention of hands\u2011on production use, deployment, or operation of workloads.",
+            "retrieved_chunk_ids": [
+              "chunk_005",
+              "chunk_002",
+              "chunk_003"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          }
+        ],
+        "corrections": [
+          {
+            "requirement_id": "R1",
+            "old_score": 0.25,
+            "new_score": 0.0,
+            "direction": "lowered",
+            "reason": "Evidence names the term but does not demonstrate use.",
+            "new_evidence": []
+          }
+        ],
+        "recommendation": "Overall match: 0/100. 1 requirement(s) could not be confidently assessed. Recommend human review before decision.",
+        "reflection_notes": [
+          "The only evidence is a skill listing of Kubernetes, which does not show hands\u2011on production experience, deployment, or operation of workloads. Therefore the original score of 0.25 is too high."
+        ]
+      },
+      "diagnostics": {
+        "evidence_quote_count": 0,
+        "invalid_evidence_quote_count": 0,
+        "positive_requirement_count": 0,
+        "unsupported_positive_count": 0,
+        "raised_correction_count": 0,
+        "lowered_correction_count": 1
+      }
+    },
+    {
+      "case_id": "case_004",
+      "description": "Buried evidence - proof in projects",
+      "expected_verdict": "accept",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Python development",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R2",
+          "requirement": "Kubernetes experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R3",
+          "requirement": "Production ML systems experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "verdict": "needs_review",
+        "review_reason": "Could not confidently assess 'Python development'. The resume explicitly mentions developing Python pipelines, building workflows with Python, and lists Python as a skill, providing clear evidence of Python development experience.",
+        "match_score": 100.0,
+        "score_pre_reflection": 100.0,
+        "score_post_reflection": 100.0,
+        "reflection_delta": 0.0,
+        "all_requirements": [
+          {
+            "requirement_id": "R1",
+            "requirement": "Python development",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.0,
+            "evidence": [
+              "Developed Python feature pipelines and trained classification models for operational forecasting.",
+              "Machine learning engineer building reliable training and inference workflows with\nPython.",
+              "Python, machine learning, Docker, SQL"
+            ],
+            "reason": "The resume explicitly mentions developing Python pipelines, building workflows with Python, and lists Python as a skill, providing clear evidence of Python development experience.",
+            "retrieved_chunk_ids": [
+              "chunk_002",
+              "chunk_001",
+              "chunk_005"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R2",
+            "requirement": "Kubernetes experience",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Deployed containerized ML inference services to Kubernetes and configured health checks, resource limits, and rolling updates."
+            ],
+            "reason": "The resume explicitly states that the candidate deployed services to Kubernetes and performed related configuration tasks, directly demonstrating Kubernetes experience.",
+            "retrieved_chunk_ids": [
+              "chunk_004",
+              "chunk_005",
+              "chunk_001"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          },
+          {
+            "requirement_id": "R3",
+            "requirement": "Operating production machine learning systems",
+            "importance": "required",
+            "score": 1.0,
+            "confidence": 0.1,
+            "evidence": [
+              "Deployed containerized ML inference services to Kubernetes and configured health checks, resource limits, and rolling updates.",
+              "Built monitoring dashboards and incident runbooks for the production ML system."
+            ],
+            "reason": "The candidate explicitly describes deploying and managing ML inference services in production, including configuration, monitoring, and incident handling, which directly satisfies the requirement.",
+            "retrieved_chunk_ids": [
+              "chunk_004",
+              "chunk_002",
+              "chunk_001"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "uncertain"
+          }
+        ],
+        "corrections": [],
+        "recommendation": "Overall match: 100/100. 3 requirement(s) could not be confidently assessed. Recommend human review before decision.",
+        "reflection_notes": [
+          "All three requirements (R1, R2, R3) have appropriate evidence directly supporting the claimed capabilities. No strong arguments were found to adjust the scores."
+        ]
+      },
+      "diagnostics": {
+        "evidence_quote_count": 6,
+        "invalid_evidence_quote_count": 0,
+        "positive_requirement_count": 3,
+        "unsupported_positive_count": 0,
+        "raised_correction_count": 0,
+        "lowered_correction_count": 0
+      }
+    },
+    {
+      "case_id": "case_005",
+      "description": "Education-only evidence",
+      "expected_verdict": "needs_review",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "At least two years of professional Python development",
+          "importance": "required",
+          "ground_truth_score": 0.25,
+          "ground_truth_evidence_exists": true,
+          "notes": "Python evidence is academic and does not establish professional experience."
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "verdict": "reject",
+        "review_reason": "Missing required qualification: At least two years of professional Python software development experience.",
+        "match_score": 0.0,
+        "score_pre_reflection": 0.0,
+        "score_post_reflection": 0.0,
+        "reflection_delta": 0.0,
+        "all_requirements": [
+          {
+            "requirement_id": "R1",
+            "requirement": "At least two years of professional Python software development experience",
+            "importance": "required",
+            "score": 0.0,
+            "confidence": 0.9,
+            "evidence": [],
+            "reason": "The resume only mentions a Python command-line project done as a class assignment (Sep 2024 - Dec 2024) and use of Python for weekly assignments and labs. There is no indication of professional employment or a two\u2011year duration of Python development.",
+            "retrieved_chunk_ids": [
+              "chunk_003",
+              "chunk_002",
+              "chunk_005"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "missing"
+          }
+        ],
+        "corrections": [],
+        "recommendation": "Overall match: 0/100. Missing required: At least two years of professional Python software development experience. Does not meet required qualifications.",
+        "reflection_notes": [
+          "No strong argument to adjust the score; the resume provides only academic and volunteer Python experience, not two years of professional development, so the score 0.0 is appropriate."
+        ]
+      },
+      "diagnostics": {
+        "evidence_quote_count": 0,
+        "invalid_evidence_quote_count": 0,
+        "positive_requirement_count": 0,
+        "unsupported_positive_count": 0,
+        "raised_correction_count": 0,
+        "lowered_correction_count": 0
+      }
+    }
+  ]
+}
