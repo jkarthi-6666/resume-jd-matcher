@@ -115,6 +115,14 @@ def run_full(
     )
     debug.reflection_result = reflection_result
 
+    # Self-reported model confidence is not calibrated. Convert it into a
+    # routing signal only after evidence validation, retrieval checks, and a
+    # completed full-resume audit have all succeeded.
+    corrected_analyses = [
+        val.calibrate_confidence(a, reflection_result.completed)
+        for a in corrected_analyses
+    ]
+
     # --- 8. Post-reflection score ---
     score_post = calculator.weighted_score(corrected_analyses)
     delta = round(score_post - score_pre, 1)

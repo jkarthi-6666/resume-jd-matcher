@@ -1,7 +1,13 @@
 """Unit tests for evidence validation."""
 import pytest
 from src.schemas import RequirementAnalysis, Chunk
-from src.validate import validate_evidence, derive_status, normalize
+from src.validate import (
+    calibrate_confidence,
+    clean_evidence_quote,
+    derive_status,
+    normalize,
+    validate_evidence,
+)
 
 
 def _make_chunk(text: str, chunk_id: str = "chunk_001") -> Chunk:
@@ -100,6 +106,27 @@ class TestValidateEvidence:
         assert result.evidence_valid is False
         assert result.score == 0.0
 
+    @pytest.mark.parametrize(
+        "quoted",
+        [
+            '"Built Flask APIs"',
+            "'Built Flask APIs'",
+            "“Built Flask APIs”",
+            "‘Built Flask APIs’",
+        ],
+    )
+    def test_presentation_quote_delimiters_are_removed(self, quoted):
+        chunk = _make_chunk("Built Flask APIs")
+        analysis = _make_analysis([quoted])
+
+        result = validate_evidence(analysis, [chunk])
+
+        assert result.evidence_valid is True
+        assert result.evidence == ["Built Flask APIs"]
+
+    def test_unmatched_quote_delimiter_is_not_removed(self):
+        assert clean_evidence_quote('"Built Flask APIs') == '"Built Flask APIs'
+
 
 class TestDeriveStatus:
     def test_matched(self):
@@ -130,4 +157,52 @@ class TestDeriveStatus:
         a = _make_analysis(["real quote"], score=0.75, confidence=0.5)
         a.evidence_valid = True
         result = derive_status(a)
+        assert result.status == "uncertain"
+
+
+class TestCalibrateConfidence:
+    def test_lifts_verified_match_after_full_resume_audit(self):
+        a = _make_analysis(["evidence"], score=1.0, confidence=0.1)
+        a.evidence_valid = True
+
+        result = calibrate_confidence(a, full_resume_audit_completed=True)
+
+        assert result.confidence == 0.7
+        assert result.status == "matched"
+
+    def test_lifts_verified_absence_after_full_resume_audit(self):
+        a = _make_analysis([], score=0.0, confidence=0.0)
+        a.evidence_valid = True
+
+        result = calibrate_confidence(a, full_resume_audit_completed=True)
+
+        assert result.confidence == 0.7
+        assert result.status == "missing"
+
+    def test_does_not_lift_low_retrieval_confidence(self):
+        a = _make_analysis(["evidence"], score=1.0, confidence=0.1)
+        a.evidence_valid = True
+        a.low_retrieval_confidence = True
+
+        result = calibrate_confidence(a, full_resume_audit_completed=True)
+
+        assert result.confidence == 0.1
+        assert result.status == "uncertain"
+
+    def test_does_not_lift_when_reflection_failed(self):
+        a = _make_analysis(["evidence"], score=1.0, confidence=0.1)
+        a.evidence_valid = True
+
+        result = calibrate_confidence(a, full_resume_audit_completed=False)
+
+        assert result.confidence == 0.1
+        assert result.status == "uncertain"
+
+    def test_does_not_lift_invalid_evidence(self):
+        a = _make_analysis(["fake"], score=1.0, confidence=0.1)
+        a.evidence_valid = False
+
+        result = calibrate_confidence(a, full_resume_audit_completed=True)
+
+        assert result.confidence == 0.1
         assert result.status == "uncertain"

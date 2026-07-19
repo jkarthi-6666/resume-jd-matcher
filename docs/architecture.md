@@ -32,6 +32,9 @@ BM25 index + FAISS index                           │
                          ↓
         Corrections — raised AND lowered — re-validated
                          ↓
+        Guarded confidence calibration
+        (valid evidence state + retrieval confidence + completed audit)
+                         ↓
               score_post_reflection
                          ↓
               Confidence router
@@ -65,6 +68,12 @@ Every correction must survive `_is_valid_correction()` before it is applied: the
 ### Why confidence routing?
 An uncertain score that routes nowhere is decoration. The router explicitly decides when a human should review, and names the specific reason.
 
+Raw model confidence is not treated as a calibrated probability. After the
+full-resume audit, `calibrate_confidence()` can lift it to the routing floor only
+when evidence state is valid, retrieval was not flagged as weak, and reflection
+completed successfully. If any safeguard fails, the original low confidence is
+preserved and the router escalates the required item.
+
 ### Routing policy
 Evaluated in order; the first rule that matches wins:
 
@@ -93,7 +102,7 @@ One missing required qualification is sufficient to reject: scoring 1.0 on Pytho
 | `src/reranker.py` | LLM rerank (cheap model) |
 | `src/planner.py` | JD → requirements (cached, temp=0) |
 | `src/scorer.py` | Per-requirement scoring |
-| `src/validate.py` | Evidence substring check + status derivation |
+| `src/validate.py` | Evidence checks, status derivation, confidence calibration |
 | `src/calculator.py` | Weighted score (Python) |
 | `src/reflector.py` | Adversarial critic |
 | `src/router.py` | Verdict routing |

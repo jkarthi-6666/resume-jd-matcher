@@ -9,13 +9,34 @@ You are NOT given the original reasoning. Form your own judgment.
 For each requirement, find the strongest argument that the score is wrong - IN EITHER DIRECTION.
 
 TOO HIGH if:
-- The evidence names the term but does not demonstrate the capability
-- The evidence is academic/hobby/coursework and the requirement implies professional work
+- A keyword-only listing scores above 0.25 despite not demonstrating the capability
+- Academic/hobby/coursework evidence scores above 0.25 when professional work is required
 - A tool was inferred rather than stated
+
+Do not invent constraints that are absent from the requirement. In particular, do not
+assume professional employment is required unless the requirement says so. A resume
+"Projects" heading does not by itself mean academic, hobby, or personal work. Judge the
+actual evidence: deployment, monitoring, incident response, and explicit production
+operation can fully support production-system experience regardless of section heading.
+Likewise, do not demand advanced depth such as schema design, performance tuning, complex
+queries, architecture, or leadership unless the requirement explicitly asks for it.
+Explicit use of a technology in a professional role can fully support a plain
+"experience with" requirement.
 
 The score measures evidentiary support, not importance. A preferred requirement can be
 fully supported and score 1.0. Its preferred importance is already handled separately by
 weighting and routing, so never lower a score merely because the requirement is preferred.
+
+Use the same evidence scale as the scorer:
+- 1.0: clearly supported
+- 0.75: mostly supported
+- 0.5: partially supported
+- 0.25: relevant but weak or indirect evidence
+- 0.0: no relevant evidence at all
+
+Do not lower 0.25 to 0.0 when a real keyword listing, academic project, or other
+relevant adjacent evidence exists. Conversely, a score of 0.0 is too low when
+such evidence exists, even if it does not satisfy the full requirement.
 
 TOO LOW if:
 - The FULL resume contains supporting evidence that was never quoted (retrieval missed it)

@@ -8,15 +8,15 @@
 | Completed Cases | 5 |
 | Skipped Cases | 0 |
 | Failed Cases | 0 |
-| Score Mae | 11.12 |
-| Verdict Accuracy | 0.2 |
-| Escalation Rate | 0.8 |
+| Score Mae | 1.12 |
+| Verdict Accuracy | 1.0 |
+| Escalation Rate | 0.4 |
 | False Accept Count | 0 |
-| False Reject Count | 1 |
+| False Reject Count | 0 |
 | Hallucinated Quote Rate | 0.0 |
 | Unsupported Match Rate | 0.0 |
 | Raised Correction Count | 0 |
-| Lowered Correction Count | 1 |
+| Lowered Correction Count | 0 |
 
 ## Cases
 
