@@ -1,41 +1,27 @@
-# Evaluation Results
+# Evaluation Results — full mode
 
-## Ablation Table
+## Metrics
 
-| System | Unsupported match rate | Hallucinated quote rate | Cost / report |
-|---|---|---|---|
-| Phase 1 — single call, no RAG | TBD | TBD | TBD |
-| + planning + hybrid RAG | TBD | TBD | TBD |
-| + evidence validation | TBD | TBD | TBD |
-| + reflection | TBD | TBD | TBD |
-| + confidence routing | TBD | TBD | TBD |
+| Metric | Value |
+|---|---:|
+| Total Cases | 5 |
+| Completed Cases | 5 |
+| Skipped Cases | 0 |
+| Failed Cases | 0 |
+| Score Mae | 11.12 |
+| Verdict Accuracy | 0.2 |
+| Escalation Rate | 0.8 |
+| False Accept Count | 0 |
+| False Reject Count | 1 |
+| Hallucinated Quote Rate | 0.0 |
+| Unsupported Match Rate | 0.0 |
+| Raised Correction Count | 0 |
+| Lowered Correction Count | 1 |
 
-## Per-stage Model Comparison
+## Cases
 
-| Stage | Calls / report | Cheap model | Strong model |
-|---|---|---|---|
-| JD → requirements | 1 | TBD | TBD |
-| Rerank candidates | N | TBD | TBD |
-| Score requirement | N | TBD | TBD |
-| Reflection | 1 | TBD | TBD |
-
-## Escalation Precision Curve
-
-Run `python evaluation/sweep_threshold.py <reports.json>` to populate this section.
-
-| Threshold | Escalation rate | Notes |
-|---|---|---|
-| 0.5 | TBD | |
-| 0.6 | TBD | |
-| 0.7 | TBD | Default |
-| 0.8 | TBD | |
-| 0.9 | TBD | |
-
-## Key Metrics
-
-- `hallucinated_quote_rate`: TBD
-- `unsupported_match_rate`: TBD
-- `retrieval_miss_rate`: TBD
-- `reflection_correction_rate`: TBD (raised / lowered split)
-- `escalation_rate`: TBD
-- `escalation_precision`: TBD
+- **case_001**: Strong match - senior backend engineer — completed
+- **case_002**: Missing required cloud skill — completed
+- **case_003**: Keyword only - no demonstrated use — completed
+- **case_004**: Buried evidence - proof in projects — completed
+- **case_005**: Education-only evidence — completed

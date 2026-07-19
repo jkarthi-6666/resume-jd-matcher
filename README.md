@@ -56,6 +56,28 @@ mocked at the provider-agnostic seam (`src.llm.call`, `src.embeddings.get_embedd
 a real provider, so a mock patched at the wrong layer surfaces immediately
 instead of quietly billing a live API.
 
+## Evaluation
+
+The repository includes five privacy-safe synthetic resumes with labeled scores
+and expected verdicts. Regenerate their PDFs and validate the dataset without
+calling a model provider:
+
+```bash
+python evaluation/generate_synthetic_pdfs.py
+python evaluation/run_evaluation.py --validate-only
+```
+
+Run a single inexpensive smoke case before evaluating the full set:
+
+```bash
+python evaluation/run_evaluation.py --mode full --case-id case_001 \
+  --output evaluation/case_001-results.json \
+  --summary evaluation/case_001-results.md
+```
+
+Omit `--case-id` to run all cases. The evaluator saves complete machine-readable
+reports and a Markdown metrics summary while isolating failures per case.
+
 ## Configuration
 
 All model and threshold settings are in `.env`. See `.env.example` for the full list.

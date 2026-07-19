@@ -12,7 +12,10 @@ TOO HIGH if:
 - The evidence names the term but does not demonstrate the capability
 - The evidence is academic/hobby/coursework and the requirement implies professional work
 - A tool was inferred rather than stated
-- A preferred requirement was scored as if mandatory
+
+The score measures evidentiary support, not importance. A preferred requirement can be
+fully supported and score 1.0. Its preferred importance is already handled separately by
+weighting and routing, so never lower a score merely because the requirement is preferred.
 
 TOO LOW if:
 - The FULL resume contains supporting evidence that was never quoted (retrieval missed it)

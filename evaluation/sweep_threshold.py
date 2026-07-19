@@ -13,7 +13,19 @@ def sweep(reports_path: str, floors: list[float] | None = None) -> None:
         floors = [round(x * 0.1, 1) for x in range(5, 10)]  # 0.5 to 0.9
 
     with open(reports_path) as f:
-        reports = json.load(f)
+        payload = json.load(f)
+
+    # Current evaluator output is an object containing per-case records. Keep
+    # accepting the original list-of-reports format for older saved runs.
+    if isinstance(payload, dict):
+        reports = [
+            case["report"]
+            for case in payload.get("cases", [])
+            if case.get("status") == "completed"
+            and "all_requirements" in case.get("report", {})
+        ]
+    else:
+        reports = payload
 
     print(f"{'Floor':>8} | {'Escalation%':>12} | {'Notes'}")
     print("-" * 50)
