@@ -5,7 +5,6 @@ from src.validate import (
     calibrate_confidence,
     clean_evidence_quote,
     derive_status,
-    normalize,
     validate_evidence,
 )
 

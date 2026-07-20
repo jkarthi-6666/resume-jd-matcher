@@ -1,5 +1,4 @@
 """Full agentic pipeline and naive baseline mode."""
-import json
 from dataclasses import dataclass, field
 from src.schemas import (
     Chunk, Requirement, RequirementAnalysis,

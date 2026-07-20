@@ -1,5 +1,4 @@
 """Unit tests for the confidence router."""
-import pytest
 from src.schemas import RequirementAnalysis
 from src.router import route
 from src.validate import derive_status
