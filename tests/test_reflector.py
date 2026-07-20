@@ -3,7 +3,6 @@
 Mocks src.llm.call, the provider-agnostic seam — patching a provider function
 would be bypassed under a different LLM_PROVIDER. See tests/conftest.py.
 """
-import pytest
 from unittest.mock import patch
 
 from src.schemas import RequirementAnalysis, ReflectionResult, Correction
