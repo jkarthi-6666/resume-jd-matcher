@@ -16,6 +16,7 @@ def reflect(
     analyses: list[RequirementAnalysis],
     resume_text: str,
     model: str | None = None,
+    validation_corpus: str | None = None,
 ) -> tuple[list[RequirementAnalysis], ReflectionResult]:
     """
     Run adversarial reflection. Returns (corrected_analyses, reflection_result).
@@ -71,12 +72,13 @@ def reflect(
     analysis_map = {a.requirement_id: a for a in analyses}
     accepted_corrections: list[Correction] = []
 
+    evidence_corpus = validation_corpus or resume_text
     resume_as_chunk = Chunk(
         chunk_id="full_resume",
         section="Full",
         header="Full resume",
-        body=resume_text,
-        embed_text=resume_text,
+        body=evidence_corpus,
+        embed_text=evidence_corpus,
         source="resume.pdf",
     )
 

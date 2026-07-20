@@ -99,6 +99,20 @@ package is constrained to `>=2.113.0,<2.114.0`, but downloaded model weights are
 not pinned by this repository, so a rebuilt model cache may change extraction,
 reading order, or chunk boundaries.
 
+### Token usage and baseline comparability
+
+The first cross-chunk evidence fix passed the union of contiguous text and
+contextualized chunks to both the reflector and naive baseline. On the seven
+readable synthetic resumes this measured 1.996 times the characters and 2.0
+times the whitespace-token proxy of contiguous text. It also made the
+100-alphabetic-character quality floor represent roughly 50 unique characters.
+
+The pipeline now keeps these concerns separate: contiguous text alone feeds the
+naive baseline and reflector prompt and is used for document sufficiency; the
+larger union is used only for evidence validation. Exact provider token usage,
+latency, and cost still need measurement because tokenizer behavior and model
+output lengths vary by provider.
+
 ### Evidence validation checks quotation, not meaning
 
 The baseline produced no fabricated quotes or unsupported positive matches,
@@ -199,10 +213,12 @@ thresholds calibrated on representative scans.
 
 Location, schedule, travel, relocation, and work-authorization constraints are
 now separated from scored qualifications. The synthetic work-authorization
-case confirms that resume silence escalates without lowering match score. An
-explicit violation also escalates by default; deployments can opt into rejection
-as a policy choice. The system still relies on the planner to classify these
-constraints as gates, and it cannot verify a candidate's statement independently.
+case confirms that resume silence escalates without lowering match score, while
+the unqualified-plus-unresolved-gate case confirms that a scored rejection is
+not suppressed. An explicit violation also escalates by default; deployments
+can opt into rejection as a policy choice. The system still relies on the
+planner to classify these constraints as gates, and it cannot verify a
+candidate's statement independently.
 
 ## Open Work
 

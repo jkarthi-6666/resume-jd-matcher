@@ -2,11 +2,11 @@
 
 Policy, in order of precedence:
 
-    unresolved eligibility gate                -> needs_review
-    violated gate (default policy)              -> needs_review
+    violated gate (reject policy enabled)       -> reject
     unverifiable evidence on a required item  -> needs_review
     low confidence on a required item         -> needs_review
     any required item below PARTIAL_MATCH_SCORE  -> reject
+    unresolved or violated gate (default policy) -> needs_review
     any required item below REQUIRED_ACCEPT_SCORE -> needs_review
     every required item at REQUIRED_ACCEPT_SCORE or above -> accept
 
@@ -46,16 +46,10 @@ def route(
     )
 
     gates = [a for a in analyses if a.kind == "gate"]
-    unresolved = [a for a in gates if a.gate_status != "satisfied"]
-    if unresolved:
-        gate = unresolved[0]
-        if gate.gate_status == "violated" and reject_gates:
-            return "reject", f"Eligibility constraint is not met: {gate.requirement}."
-        state = "violated" if gate.gate_status == "violated" else "unresolved"
-        return "needs_review", (
-            f"Eligibility constraint is {state}: {gate.requirement}. "
-            "Confirm this constraint with the candidate."
-        )
+    violated_gates = [a for a in gates if a.gate_status == "violated"]
+    if violated_gates and reject_gates:
+        gate = violated_gates[0]
+        return "reject", f"Eligibility constraint is not met: {gate.requirement}."
 
     required = [
         a for a in analyses if a.kind == "scored" and a.importance == "required"
@@ -82,6 +76,21 @@ def route(
     if missing:
         r = min(missing, key=lambda a: a.score)
         return "reject", f"Missing required qualification: {r.requirement}."
+
+    # Gates block an automatic accept, but cannot erase a scored rejection.
+    # Prefer an explicit violation over an unknown gate regardless of planner order.
+    unresolved = violated_gates + [
+        a
+        for a in gates
+        if a.gate_status not in ("satisfied", "violated")
+    ]
+    if unresolved:
+        gate = unresolved[0]
+        state = "violated" if gate.gate_status == "violated" else "unresolved"
+        return "needs_review", (
+            f"Eligibility constraint is {state}: {gate.requirement}. "
+            "Confirm this constraint with the candidate."
+        )
 
     # Partial evidence for a required qualification is a human judgment call.
     partial = [a for a in required if a.score < accept_score]

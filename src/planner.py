@@ -147,37 +147,47 @@ def plan(job_description: str, model: str | None = None) -> RequirementPlan:
 
     model = model or config.PLANNER_MODEL
     prompt = _PROMPT.format(job_description=normalized_jd)
-    try:
-        result: RequirementPlan = llm.call(
-            prompt, model, RequirementPlan, temperature=0.0
-        )
-    except ValueError:
-        # JSON-mode providers do not all enforce the supplied schema. One retry
-        # handles occasional malformed enum values or JSON without weakening the
-        # validated contract used by the rest of the pipeline.
-        result = llm.call(
-            prompt,
-            model,
-            RequirementPlan,
-            temperature=0.0,
-            system=(
-                "You are a strict job-requirement extraction engine. Follow the "
-                "allowed enum values and output schema exactly. Return JSON only."
-            ),
-        )
-
-    requirements, dropped = _finalize_requirements(
-        result.requirements, normalized_jd
+    strict_system = (
+        "You are a strict job-requirement extraction engine. Follow the allowed "
+        "enum values and output schema exactly, including a non-empty verbatim "
+        "source_span for every requirement. Return JSON only."
     )
-    if not requirements:
-        raise ValueError("Planner returned no requirements. Cannot proceed to scoring.")
 
-    plan_result = RequirementPlan(
-        requirements=requirements,
-        dropped_requirement_count=dropped,
-    )
-    _CACHE[jd_hash] = plan_result
-    return plan_result
+    for attempt in range(2):
+        try:
+            result: RequirementPlan = llm.call(
+                prompt,
+                model,
+                RequirementPlan,
+                temperature=0.0,
+                system=strict_system if attempt else "",
+            )
+        except ValueError:
+            # JSON-mode providers do not all enforce the supplied schema. Retry
+            # once without weakening the validated downstream contract.
+            if attempt == 0:
+                continue
+            raise
+
+        requirements, dropped = _finalize_requirements(
+            result.requirements, normalized_jd
+        )
+        if requirements:
+            plan_result = RequirementPlan(
+                requirements=requirements,
+                dropped_requirement_count=dropped,
+            )
+            _CACHE[jd_hash] = plan_result
+            return plan_result
+
+        all_failed_source_validation = (
+            bool(result.requirements) and dropped == len(result.requirements)
+        )
+        if attempt == 0 and all_failed_source_validation:
+            continue
+        break
+
+    raise ValueError("Planner returned no valid requirements. Cannot proceed to scoring.")
 
 
 def clear_cache() -> None:

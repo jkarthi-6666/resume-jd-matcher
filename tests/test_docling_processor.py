@@ -7,6 +7,7 @@ from src.docling_processor import (
     DocumentProcessingTimeoutError,
     UnassessableDocumentError,
     _to_app_chunk,
+    build_validation_corpus,
     extract_and_chunk_resume,
 )
 from src.validate import normalize
@@ -101,9 +102,11 @@ def test_extract_and_chunk_resume_maps_docling_chunks_to_app_contract():
     assert chunker.document_seen is converter.document
     assert converter.source_seen.name == "candidate.pdf"
 
-    # Reflection receives the same serialization that scoring can quote.
+    validation_corpus = build_validation_corpus(resume_text, chunks)
+    assert "Experience\nSenior Engineer" not in resume_text
+    # Validation still receives every serialization that scoring can quote.
     for chunk in chunks:
-        assert normalize(chunk.embed_text) in normalize(resume_text)
+        assert normalize(chunk.embed_text) in normalize(validation_corpus)
 
 
 def test_resume_text_preserves_cross_chunk_reading_order_quotes():
@@ -122,7 +125,11 @@ def test_resume_text_preserves_cross_chunk_reading_order_quotes():
         resume_text, chunks = extract_and_chunk_resume(b"pdf")
 
     assert normalize("Designed distributed systems at scale.") in normalize(resume_text)
-    assert all(normalize(chunk.embed_text) in normalize(resume_text) for chunk in chunks)
+    validation_corpus = build_validation_corpus(resume_text, chunks)
+    assert all(
+        normalize(chunk.embed_text) in normalize(validation_corpus)
+        for chunk in chunks
+    )
 
 
 def test_extract_and_chunk_resume_supplies_fallback_metadata_and_skips_empty_chunks():
@@ -166,6 +173,19 @@ def test_extract_and_chunk_resume_rejects_negligible_or_non_linguistic_text():
     with patch("src.docling_processor._get_converter", return_value=converter), \
          patch("src.docling_processor._get_chunker", return_value=chunker):
         with pytest.raises(UnassessableDocumentError, match="poor-quality scan"):
+            extract_and_chunk_resume(b"pdf")
+
+
+def test_content_sufficiency_uses_contiguous_text_without_duplication():
+    short_text = "A" * 60
+    document = SimpleNamespace(export_to_text=lambda: short_text)
+    converter = FakeConverter(document=document)
+    chunker = FakeChunker([FakeDoclingChunk(short_text, ["Summary"])])
+
+    with patch("src.docling_processor._get_converter", return_value=converter), \
+         patch("src.docling_processor._get_chunker", return_value=chunker), \
+         patch("src.docling_processor.config.MIN_RESUME_ALPHABETIC_CHARS", 100):
+        with pytest.raises(UnassessableDocumentError):
             extract_and_chunk_resume(b"pdf")
 
 

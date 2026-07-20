@@ -119,6 +119,58 @@ class TestEligibilityGates:
         assert verdict == "reject"
         assert "AWS" in reason
 
+    def test_unknown_gate_does_not_block_scored_rejection(self):
+        gate = _req(
+            "required", 0.0, 0.95, kind="gate",
+            requirement="Work authorization must be confirmed",
+        )
+        missing = _req(
+            "required", 0.0, 0.95,
+            requirement_id="R2", requirement="AWS",
+        )
+
+        verdict, reason = route([gate, missing])
+
+        assert verdict == "reject"
+        assert "AWS" in reason
+
+    def test_violated_gate_policy_is_independent_of_gate_order(self):
+        unknown = _req(
+            "required", 0.0, 0.95, kind="gate",
+            requirement_id="R1", requirement="Relocation willingness",
+        )
+        violated = _req(
+            "required", 0.0, 0.95, kind="gate",
+            requirement_id="R2", requirement="Work authorization",
+            evidence=["I require employer visa sponsorship."],
+        )
+
+        verdict, reason = route(
+            [unknown, violated], reject_violated_gates=True
+        )
+
+        assert verdict == "reject"
+        assert "Work authorization" in reason
+
+    def test_violated_gate_is_reported_before_unknown_under_default_policy(self):
+        unknown = _req(
+            "required", 0.0, 0.95, kind="gate",
+            requirement_id="R1", requirement="Relocation willingness",
+        )
+        violated = _req(
+            "required", 0.0, 0.95, kind="gate",
+            requirement_id="R2", requirement="Work authorization",
+            evidence=["I require employer visa sponsorship."],
+        )
+
+        verdict, reason = route(
+            [unknown, violated], reject_violated_gates=False
+        )
+
+        assert verdict == "needs_review"
+        assert "Work authorization" in reason
+        assert "violated" in reason
+
 
 class TestMissingRequired:
     def test_reject_when_one_of_two_required_is_missing(self):

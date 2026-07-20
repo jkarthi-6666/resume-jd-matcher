@@ -12,6 +12,7 @@ from src import validate as val, calculator, reflector, router, config, llm
 @dataclass
 class DebugInfo:
     resume_text: str = ""
+    validation_corpus: str = ""
     chunks: list[Chunk] = field(default_factory=list)
     requirements: list[Requirement] = field(default_factory=list)
     retrieval_debug: list[dict] = field(default_factory=list)  # per-requirement
@@ -83,6 +84,10 @@ def run_full(
         )
         return report, debug
     debug.resume_text = resume_text
+    validation_corpus = docling_processor.build_validation_corpus(
+        resume_text, chunks
+    )
+    debug.validation_corpus = validation_corpus
     debug.chunks = chunks
 
     # --- 2. Build retriever ---
@@ -155,7 +160,9 @@ def run_full(
     # --- 7. Adversarial reflection ---
     _tick("Running adversarial reflection", 4, n_stages)
     corrected_analyses, reflection_result = reflector.reflect(
-        analyses, resume_text
+        analyses,
+        resume_text,
+        validation_corpus=validation_corpus,
     )
     debug.reflection_result = reflection_result
 

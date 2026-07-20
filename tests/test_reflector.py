@@ -116,6 +116,27 @@ class TestAcceptedCorrections:
         assert [a.requirement_id for a in corrected] == ["R1", "R2"]
         assert corrected[1].score == 1.0
 
+    def test_prompt_uses_contiguous_text_but_validation_uses_union(self):
+        contiguous = "Built Python APIs."
+        validation_corpus = "Built Python APIs.\n\nExperience\nBuilt Python APIs."
+        correction = _correction(new_evidence=["Experience"])
+        result = ReflectionResult(
+            approved=False, changed_requirements=[correction], review_notes=[]
+        )
+
+        with patch("src.llm.call", return_value=result) as mock_call:
+            corrected, reflected = reflect(
+                [_analysis(score=0.5)],
+                contiguous,
+                validation_corpus=validation_corpus,
+            )
+
+        prompt = mock_call.call_args.args[0]
+        assert validation_corpus not in prompt
+        assert prompt.count(contiguous) == 1
+        assert corrected[0].score == 1.0
+        assert reflected.changed_requirements == [correction]
+
 
 class TestRejectedCorrections:
     def test_raised_correction_with_fabricated_evidence_is_ignored(self):

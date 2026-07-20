@@ -205,6 +205,17 @@ class TestPipelineMocked:
         assert len(report.all_requirements) == 2
         assert len(debug.chunks) > 0
         assert len(debug.requirements) == 2
+        assert debug.resume_text == MOCK_RESUME
+        assert all(
+            chunk.embed_text in debug.validation_corpus
+            for chunk in MOCK_CHUNKS
+        )
+        reflection_prompt = next(
+            call.args[0]
+            for call in mock_call.call_args_list
+            if call.args[2] is ReflectionResult
+        )
+        assert reflection_prompt.count(MOCK_RESUME) == 1
         mock_process.assert_called_once_with(b"fake_pdf")
 
     @patch("src.embeddings.get_embeddings", side_effect=fake_embeddings)
@@ -238,6 +249,8 @@ class TestPipelineMocked:
 
         assert 0 <= result.match_score <= 100
         assert "Python" in result.matched_skills
+        naive_prompt = mock_call.call_args.args[0]
+        assert naive_prompt.count(MOCK_RESUME) == 1
         mock_process.assert_called_once_with(b"fake_pdf")
 
     @patch("src.pipeline.docling_processor.extract_and_chunk_resume")

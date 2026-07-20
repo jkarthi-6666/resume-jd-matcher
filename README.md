@@ -63,7 +63,7 @@ instead of quietly billing a live API.
 
 ## Evaluation
 
-The repository includes seven privacy-safe synthetic resumes with labeled scores
+The repository includes eight privacy-safe synthetic resumes with labeled scores
 and expected verdicts. Regenerate their PDFs and validate the dataset without
 calling a model provider:
 

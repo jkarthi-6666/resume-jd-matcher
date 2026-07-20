@@ -60,6 +60,11 @@ exposed to scoring remains available to the reflector's evidence validator.
 Together they preserve the scorer-superset invariant without requiring headings
 injected at chunk boundaries to appear inside original prose.
 
+That union is validation-only. Document sufficiency, the naive baseline, and the
+reflector prompt use the contiguous reading-order text once. This keeps the
+quality thresholds tied to unique document content and avoids doubling model
+input while correction evidence is still checked against the full union.
+
 ### Why hybrid retrieval?
 - BM25 guarantees exact keyword hits that embeddings can miss.
 - Embeddings handle paraphrase that BM25 can miss.
@@ -110,15 +115,18 @@ constraints are `gate`. Category remains descriptive metadata only. Gates never
 enter either side of the weighted-score calculation. Python resolves them to
 `satisfied`, `violated`, or `unknown`; resume silence is `unknown`, not a gap.
 
-Gate routing runs first: unknown gates require human review, and explicit
-violations also require review unless a deployment opts into rejection with
-`REJECT_VIOLATED_GATES=true`. Satisfied gates then yield to the scored policy.
-The scored rules retain their prior order; the first matching rule wins:
+An explicit gate violation routes first only when a deployment opts into
+rejection with `REJECT_VIOLATED_GATES=true`. Otherwise, scored evidence and
+confidence are evaluated first. A confidently missing scored qualification can
+still reject; unresolved gates block acceptance, not rejection. Among unresolved
+gates, explicit violations are reported before unknowns regardless of planner
+output order. The first matching rule wins:
 
 ```
 unverifiable evidence on a required item        -> needs_review
 low confidence on a required item               -> needs_review
 any required item below PARTIAL_MATCH_SCORE     -> reject
+unresolved or default-policy violated gate       -> needs_review
 any required item below REQUIRED_ACCEPT_SCORE   -> needs_review
 every required item at REQUIRED_ACCEPT_SCORE+   -> accept
 ```

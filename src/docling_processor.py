@@ -9,6 +9,7 @@ from src import config
 __all__ = [
     "DocumentProcessingTimeoutError",
     "UnassessableDocumentError",
+    "build_validation_corpus",
     "extract_and_chunk_resume",
 ]
 
@@ -36,14 +37,19 @@ def _content_is_sufficient(text: str) -> bool:
     )
 
 
-def _assemble_resume_text(document: Any, chunks: list[Chunk]) -> str:
-    """Return a validation union of reading-order and contextualized text."""
+def _contiguous_resume_text(document: Any, chunks: list[Chunk]) -> str:
+    """Return Docling reading-order text, falling back to plain chunk bodies."""
     exporter = getattr(document, "export_to_text", None)
     contiguous = str(exporter()).strip() if callable(exporter) else ""
     if not contiguous:
         contiguous = "\n\n".join(chunk.body for chunk in chunks).strip()
+    return contiguous
+
+
+def build_validation_corpus(resume_text: str, chunks: list[Chunk]) -> str:
+    """Union contiguous prose with every contextualized scorer-visible string."""
     contextualized = "\n\n".join(chunk.embed_text for chunk in chunks).strip()
-    return "\n\n".join(part for part in (contiguous, contextualized) if part)
+    return "\n\n".join(part for part in (resume_text, contextualized) if part)
 
 
 @lru_cache(maxsize=1)
@@ -103,12 +109,11 @@ def extract_and_chunk_resume(
     pdf_bytes: bytes,
     source: str = "resume.pdf",
 ) -> tuple[str, list[Chunk]]:
-    """Convert an in-memory PDF and return evidence-safe text and app chunks.
+    """Convert an in-memory PDF and return contiguous text plus app chunks.
 
-    The returned full text combines Docling's contiguous reading-order export
-    with the contextualized strings used for retrieval and scoring. This both
-    preserves cross-chunk prose and guarantees that anything a scorer can quote
-    is present when the reflector validates a correction.
+    The returned text is the original reading order used for document-quality
+    checks and model prompts. Call ``build_validation_corpus`` when evidence
+    validation also needs the contextualized strings exposed to scoring.
     """
     if not pdf_bytes:
         raise ValueError("Resume PDF is empty.")
@@ -158,7 +163,7 @@ def extract_and_chunk_resume(
             "clearer, text-based PDF is required."
         )
 
-    resume_text = _assemble_resume_text(document, chunks)
+    resume_text = _contiguous_resume_text(document, chunks)
     if not _content_is_sufficient(resume_text):
         raise UnassessableDocumentError(
             "We could not read enough reliable text from this resume to assess "

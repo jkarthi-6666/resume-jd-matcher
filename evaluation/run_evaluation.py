@@ -71,8 +71,8 @@ def _full_runner(pdf_bytes: bytes, job_description: str) -> dict[str, Any]:
         chunk_id="evaluation_resume",
         section="Full",
         header="Full resume",
-        body=debug.resume_text,
-        embed_text=debug.resume_text,
+        body=debug.validation_corpus,
+        embed_text=debug.validation_corpus,
         source="evaluation",
     )
     quotes = [quote for analysis in report.all_requirements for quote in analysis.evidence]

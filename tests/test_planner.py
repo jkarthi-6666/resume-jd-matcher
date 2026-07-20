@@ -82,6 +82,32 @@ def test_plan_retries_one_schema_failure():
     assert "strict job-requirement extraction engine" in mock_call.call_args.kwargs["system"]
 
 
+def test_plan_retries_when_every_requirement_omits_source_span():
+    spanless = RequirementPlan(requirements=[
+        Requirement(
+            id="R1", requirement="Python programming",
+            category="technical_skill", importance="required",
+        )
+    ])
+    grounded = RequirementPlan(requirements=[
+        Requirement(
+            id="R1", requirement="Python programming",
+            category="technical_skill", importance="required",
+            source_span="Python programming",
+        )
+    ])
+    clear_cache()
+
+    with patch(
+        "src.planner.llm.call", side_effect=[spanless, grounded]
+    ) as mock_call:
+        result = plan("Python programming is required")
+
+    assert [r.requirement for r in result.requirements] == ["Python programming"]
+    assert mock_call.call_count == 2
+    assert "non-empty verbatim source_span" in mock_call.call_args.kwargs["system"]
+
+
 def test_plan_drops_only_requirements_with_invalid_source_spans():
     model_result = RequirementPlan(requirements=[
         Requirement(
@@ -97,11 +123,12 @@ def test_plan_drops_only_requirements_with_invalid_source_spans():
     ])
     clear_cache()
 
-    with patch("src.planner.llm.call", return_value=model_result):
+    with patch("src.planner.llm.call", return_value=model_result) as mock_call:
         result = plan("Python programming is required")
 
     assert [r.requirement for r in result.requirements] == ["Python programming"]
     assert result.dropped_requirement_count == 1
+    mock_call.assert_called_once()
 
 
 def test_plan_merges_semantic_duplicates_using_embeddings():
