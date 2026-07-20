@@ -40,26 +40,41 @@ def run_full(
     pdf_bytes: bytes,
     job_description: str,
     generate_recommendation: bool = True,
+    progress_cb=None,
 ) -> tuple[FinalReport, DebugInfo]:
-    """Full agentic pipeline."""
+    """Full agentic pipeline.
+
+    progress_cb, if given, is called as progress_cb(stage: str, done: int, total: int)
+    at each stage boundary so callers (e.g. the Streamlit UI) can render progress.
+    """
     debug = DebugInfo()
+
+    def _tick(stage: str, done: int, total: int):
+        if progress_cb is not None:
+            progress_cb(stage, done, total)
 
     if not job_description.strip():
         raise ValueError("Job description is empty.")
 
+    n_stages = 7  # extract, chunk, index, plan, score-requirements, reflect, route
+
     # --- 1. PDF extraction ---
+    _tick("Extracting resume text", 0, n_stages)
     resume_text = parser.extract_text(pdf_bytes)
     debug.resume_text = resume_text
 
     # --- 2. Chunking ---
+    _tick("Chunking resume", 1, n_stages)
     chunks = chunker.chunk_resume(resume_text)
     debug.chunks = chunks
 
     # --- 3. Build retriever ---
+    _tick("Building hybrid retriever index", 2, n_stages)
     hybrid = ret_mod.HybridRetriever()
     hybrid.build(chunks)
 
     # --- 4. Requirement planning ---
+    _tick("Planning requirements from job description", 3, n_stages)
     requirements = planner.plan(job_description)
     debug.requirements = requirements
 
@@ -92,12 +107,17 @@ def run_full(
         return req.id, analysis, ret_dbg, ev_dbg
 
     # Run all requirements concurrently; collect in original order
+    total_reqs = len(requirements)
+    _tick(f"Scoring requirements (0/{total_reqs})", 4, n_stages)
     result_map: dict[str, tuple] = {}
+    n_done = 0
     with ThreadPoolExecutor(max_workers=min(len(requirements), 8)) as pool:
         futures = {pool.submit(_process_requirement, req): req for req in requirements}
         for future in as_completed(futures):
             req_id, analysis, ret_dbg, ev_dbg = future.result()
             result_map[req_id] = (analysis, ret_dbg, ev_dbg)
+            n_done += 1
+            _tick(f"Scoring requirements ({n_done}/{total_reqs})", 4, n_stages)
 
     analyses: list[RequirementAnalysis] = []
     for req in requirements:
@@ -110,6 +130,7 @@ def run_full(
     score_pre = calculator.weighted_score(analyses)
 
     # --- 7. Adversarial reflection ---
+    _tick("Running adversarial reflection", 5, n_stages)
     corrected_analyses, reflection_result = reflector.reflect(
         analyses, resume_text
     )
@@ -128,10 +149,13 @@ def run_full(
     delta = round(score_post - score_pre, 1)
 
     # --- 9. Confidence routing ---
+    _tick("Routing verdict and generating recommendation", 6, n_stages)
     verdict, review_reason = router.route(corrected_analyses)
 
     # --- 10. Recommendation ---
     recommendation = _make_recommendation(corrected_analyses, verdict, score_post)
+
+    _tick("Done", n_stages, n_stages)
 
     report = FinalReport(
         verdict=verdict,

@@ -2,8 +2,13 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 Importance = Literal["required", "preferred", "unknown"]
+# Category is descriptive metadata only; it is not used to score or route a
+# candidate.  Some JSON-mode models return ``unknown`` when the JD does not make
+# a requirement's category clear.  Treat that as an explicit fallback instead
+# of aborting the entire pipeline after requirement extraction.
 Category   = Literal["technical_skill", "experience", "education",
-                     "domain_knowledge", "soft_skill", "responsibility"]
+                     "domain_knowledge", "soft_skill", "responsibility",
+                     "unknown"]
 Status     = Literal["matched", "partially_matched", "missing", "uncertain"]
 Verdict    = Literal["accept", "needs_review", "reject"]
 
