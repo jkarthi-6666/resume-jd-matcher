@@ -27,6 +27,12 @@ The score measures evidentiary support, not importance. A preferred requirement 
 fully supported and score 1.0. Its preferred importance is already handled separately by
 weighting and routing, so never lower a score merely because the requirement is preferred.
 
+A requirement with kind "gate" is a binary eligibility constraint. For a gate,
+1.0 means explicit evidence that it is satisfied, 0.0 with evidence means an
+explicit violation, and 0.0 without evidence means unknown. Resume silence is
+not evidence of violation. Every gate correction in either direction must quote
+new verbatim evidence.
+
 Use the same evidence scale as the scorer:
 - 1.0: clearly supported
 - 0.75: mostly supported

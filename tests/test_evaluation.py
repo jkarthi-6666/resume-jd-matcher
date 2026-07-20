@@ -82,6 +82,9 @@ def test_calculate_full_metrics():
                 "unsupported_positive_count": 0,
                 "raised_correction_count": 1,
                 "lowered_correction_count": 0,
+                "planner_output_requirement_count": 4,
+                "planner_dropped_requirement_count": 1,
+                "rejected_correction_reasons": ["evidence_substring_miss"],
             },
         },
         {
@@ -98,6 +101,9 @@ def test_calculate_full_metrics():
                 "unsupported_positive_count": 0,
                 "raised_correction_count": 0,
                 "lowered_correction_count": 1,
+                "planner_output_requirement_count": 2,
+                "planner_dropped_requirement_count": 0,
+                "rejected_correction_reasons": ["direction_mismatch"],
             },
         },
     ]
@@ -110,6 +116,11 @@ def test_calculate_full_metrics():
     assert metrics["hallucinated_quote_rate"] == 0.5
     assert metrics["raised_correction_count"] == 1
     assert metrics["lowered_correction_count"] == 1
+    assert metrics["planner_hallucination_rate"] == pytest.approx(1 / 6, abs=1e-4)
+    assert metrics["rejected_correction_reason_counts"] == {
+        "evidence_substring_miss": 1,
+        "direction_mismatch": 1,
+    }
 
 
 def test_writers_create_machine_and_human_readable_outputs(tmp_path):

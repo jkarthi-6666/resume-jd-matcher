@@ -8,6 +8,12 @@ def normalize(s: str) -> str:
     return re.sub(r"\s+", " ", s.lower().strip())
 
 
+def is_source_substring(candidate: str, corpus: str) -> bool:
+    """Use one normalized-substring definition for JD spans and resume quotes."""
+    normalized_candidate = normalize(candidate)
+    return bool(normalized_candidate) and normalized_candidate in normalize(corpus)
+
+
 def clean_evidence_quote(quote: str) -> str:
     """Remove presentation-only quote delimiters before exact validation."""
     cleaned = quote.strip()
@@ -20,8 +26,8 @@ def clean_evidence_quote(quote: str) -> str:
 
 def invalid_evidence_quotes(evidence: list[str], chunks: list[Chunk]) -> list[str]:
     """Quotes that are not substrings of the given chunks."""
-    corpus = normalize(" ".join(c.embed_text for c in chunks))
-    return [q for q in evidence if normalize(q) not in corpus]
+    corpus = " ".join(c.embed_text for c in chunks)
+    return [q for q in evidence if not is_source_substring(q, corpus)]
 
 
 def validate_evidence(
@@ -72,6 +78,9 @@ def derive_status(analysis: RequirementAnalysis) -> RequirementAnalysis:
     Thresholds come from config so status and the router's verdict stay in
     agreement — a requirement badged "matched" is one the router will accept.
     """
+    if analysis.kind == "gate":
+        return derive_gate_status(analysis)
+
     ev = analysis.evidence_valid
     conf = analysis.confidence
     score = analysis.score
@@ -88,6 +97,29 @@ def derive_status(analysis: RequirementAnalysis) -> RequirementAnalysis:
     return analysis
 
 
+def derive_gate_status(analysis: RequirementAnalysis) -> RequirementAnalysis:
+    """Resolve a binary eligibility gate without treating silence as failure."""
+    assessable = (
+        analysis.evidence_valid is True
+        and bool(analysis.evidence)
+        and analysis.confidence >= config.CONFIDENCE_FLOOR
+        and not analysis.low_retrieval_confidence
+    )
+    if not assessable:
+        analysis.gate_status = "unknown"
+        analysis.status = "uncertain"
+    elif analysis.score >= config.REQUIRED_ACCEPT_SCORE:
+        analysis.gate_status = "satisfied"
+        analysis.status = "matched"
+    elif analysis.score < config.PARTIAL_MATCH_SCORE:
+        analysis.gate_status = "violated"
+        analysis.status = "missing"
+    else:
+        analysis.gate_status = "unknown"
+        analysis.status = "uncertain"
+    return analysis
+
+
 def calibrate_confidence(
     analysis: RequirementAnalysis,
     full_resume_audit_completed: bool,
@@ -101,6 +133,9 @@ def calibrate_confidence(
     the scorer made no positive claim and the full-resume audit found no reason
     to correct it.
     """
+    if analysis.kind == "gate":
+        return derive_status(analysis)
+
     if (
         full_resume_audit_completed
         and analysis.evidence_valid is True

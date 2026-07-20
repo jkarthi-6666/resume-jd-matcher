@@ -19,6 +19,7 @@ def score(
             requirement_id=requirement.id,
             requirement=requirement.requirement,
             importance=requirement.importance,
+            kind=requirement.kind,
             score=0.0,
             confidence=1.0,
             evidence=[],
@@ -35,6 +36,7 @@ def score(
     prompt = _PROMPT.format(
         requirement=requirement.requirement,
         importance=requirement.importance,
+        kind=requirement.kind,
         retrieved_chunks=chunk_text,
         requirement_id=requirement.id,
     )
@@ -47,6 +49,7 @@ def score(
         analysis.requirement_id = requirement.id
         analysis.requirement   = requirement.requirement
         analysis.importance    = requirement.importance
+        analysis.kind          = requirement.kind
         analysis.retrieved_chunk_ids = [c.chunk_id for c in chunks]
         analysis.low_retrieval_confidence = low_retrieval_confidence
         return analysis
@@ -57,6 +60,7 @@ def score(
             analysis.requirement_id = requirement.id
             analysis.requirement   = requirement.requirement
             analysis.importance    = requirement.importance
+            analysis.kind          = requirement.kind
             analysis.retrieved_chunk_ids = [c.chunk_id for c in chunks]
             analysis.low_retrieval_confidence = low_retrieval_confidence
             return analysis
@@ -65,6 +69,7 @@ def score(
                 requirement_id=requirement.id,
                 requirement=requirement.requirement,
                 importance=requirement.importance,
+                kind=requirement.kind,
                 score=0.0,
                 confidence=0.0,
                 evidence=[],

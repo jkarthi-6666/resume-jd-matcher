@@ -15,6 +15,7 @@ from src.schemas import (
     RerankerResult, RerankedChunk, ReflectionResult, NaiveResult,
 )
 from tests.conftest import fake_embeddings
+from src.docling_processor import UnassessableDocumentError
 
 
 MOCK_RESUME = " ".join(["word"] * 50) + """
@@ -61,9 +62,11 @@ def _fake_llm_call(prompt, model, schema, temperature=0.0, system=""):
     if schema is RequirementPlan:
         return RequirementPlan(requirements=[
             Requirement(id="R1", requirement="Python experience",
-                        category="technical_skill", importance="required"),
+                        category="technical_skill", importance="required",
+                        source_span="Python"),
             Requirement(id="R2", requirement="REST API experience",
-                        category="technical_skill", importance="required"),
+                        category="technical_skill", importance="required",
+                        source_span="REST API experience"),
         ])
 
     if schema is RerankerResult:
@@ -104,7 +107,84 @@ def _fake_llm_call(prompt, model, schema, temperature=0.0, system=""):
     raise AssertionError(f"Unexpected schema requested: {schema}")
 
 
+def _fake_gate_llm_call(prompt, model, schema, temperature=0.0, system=""):
+    if schema is RequirementPlan:
+        return RequirementPlan(requirements=[
+            Requirement(
+                id="R1", requirement="Python experience",
+                category="technical_skill", importance="required",
+                source_span="Python experience",
+            ),
+            Requirement(
+                id="R2",
+                requirement="Must be authorized to work in the US without sponsorship",
+                category="unknown", importance="required", kind="gate",
+                source_span="authorized to work in the US without sponsorship",
+            ),
+        ])
+    if schema is RequirementAnalysis and 'kind: gate' in prompt:
+        return RequirementAnalysis(
+            requirement_id="R2",
+            requirement="placeholder",
+            importance="required",
+            kind="gate",
+            score=0.0,
+            confidence=0.95,
+            evidence=[],
+            reason="The resume does not state work authorization.",
+            retrieved_chunk_ids=[],
+        )
+    return _fake_llm_call(prompt, model, schema, temperature, system)
+
+
 class TestPipelineMocked:
+    @patch("src.embeddings.get_embeddings")
+    @patch("src.llm.call")
+    @patch(
+        "src.pipeline.docling_processor.extract_and_chunk_resume",
+        side_effect=UnassessableDocumentError(
+            "We could not read enough reliable text; human review is required."
+        ),
+    )
+    def test_unassessable_document_routes_to_review_before_scoring(
+        self, mock_process, mock_call, mock_embed
+    ):
+        from src.pipeline import run_full
+
+        report, debug = run_full(b"poor_scan", MOCK_JD)
+
+        assert report.verdict == "needs_review"
+        assert "could not read" in report.review_reason.lower()
+        assert report.all_requirements == []
+        assert debug.requirements == []
+        mock_call.assert_not_called()
+        mock_embed.assert_not_called()
+
+    @patch("src.embeddings.get_embeddings", side_effect=fake_embeddings)
+    @patch("src.llm.call", side_effect=_fake_gate_llm_call)
+    @patch(
+        "src.pipeline.docling_processor.extract_and_chunk_resume",
+        return_value=(MOCK_RESUME, MOCK_CHUNKS),
+    )
+    def test_silent_work_authorization_gate_reviews_without_lowering_score(
+        self, mock_process, mock_call, mock_embed
+    ):
+        from src.pipeline import run_full
+        from src.planner import clear_cache
+        clear_cache()
+
+        report, _ = run_full(
+            b"fake_pdf",
+            "Python experience is required. Candidate must be authorized to "
+            "work in the US without sponsorship.",
+        )
+
+        gate = next(a for a in report.all_requirements if a.kind == "gate")
+        assert report.verdict == "needs_review"
+        assert "authorized to work" in report.review_reason
+        assert gate.gate_status == "unknown"
+        assert report.match_score == 100.0
+
     @patch("src.embeddings.get_embeddings", side_effect=fake_embeddings)
     @patch("src.llm.call", side_effect=_fake_llm_call)
     @patch(

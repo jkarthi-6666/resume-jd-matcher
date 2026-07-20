@@ -2,6 +2,8 @@
 
 Policy, in order of precedence:
 
+    unresolved eligibility gate                -> needs_review
+    violated gate (default policy)              -> needs_review
     unverifiable evidence on a required item  -> needs_review
     low confidence on a required item         -> needs_review
     any required item below PARTIAL_MATCH_SCORE  -> reject
@@ -20,6 +22,7 @@ def route(
     confidence_floor: float | None = None,
     required_accept_score: float | None = None,
     partial_match_score: float | None = None,
+    reject_violated_gates: bool | None = None,
 ) -> tuple[Verdict, str | None]:
     floor = (
         confidence_floor
@@ -36,8 +39,27 @@ def route(
         if partial_match_score is not None
         else config.PARTIAL_MATCH_SCORE
     )
+    reject_gates = (
+        reject_violated_gates
+        if reject_violated_gates is not None
+        else config.REJECT_VIOLATED_GATES
+    )
 
-    required = [a for a in analyses if a.importance == "required"]
+    gates = [a for a in analyses if a.kind == "gate"]
+    unresolved = [a for a in gates if a.gate_status != "satisfied"]
+    if unresolved:
+        gate = unresolved[0]
+        if gate.gate_status == "violated" and reject_gates:
+            return "reject", f"Eligibility constraint is not met: {gate.requirement}."
+        state = "violated" if gate.gate_status == "violated" else "unresolved"
+        return "needs_review", (
+            f"Eligibility constraint is {state}: {gate.requirement}. "
+            "Confirm this constraint with the candidate."
+        )
+
+    required = [
+        a for a in analyses if a.kind == "scored" and a.importance == "required"
+    ]
 
     # Unverifiable evidence means the automated decision is unreliable.
     bad_evidence = [a for a in required if a.evidence_valid is False]

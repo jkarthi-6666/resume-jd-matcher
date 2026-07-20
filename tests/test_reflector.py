@@ -91,6 +91,22 @@ class TestAcceptedCorrections:
         assert corrected[0].evidence == []
         assert corrected[0].status == "missing"
 
+    def test_lowering_gate_to_violation_retains_verified_evidence(self):
+        gate = _analysis(score=1.0).model_copy(update={"kind": "gate"})
+        correction = _correction(
+            old_score=1.0,
+            new_score=0.0,
+            direction="lowered",
+            new_evidence=[REAL_QUOTE],
+        )
+
+        corrected, result = _reflect([correction], [gate])
+
+        assert corrected[0].score == 0.0
+        assert corrected[0].evidence == [REAL_QUOTE]
+        assert corrected[0].gate_status == "violated"
+        assert result.changed_requirements == [correction]
+
     def test_correction_preserves_requirement_order(self):
         analyses = [
             _analysis(score=0.5, requirement_id="R1"),
@@ -112,6 +128,23 @@ class TestRejectedCorrections:
         assert corrected[0].evidence == [REAL_QUOTE]
         assert result.changed_requirements == []
         assert any("could not be verified" in n for n in result.review_notes)
+        assert result.rejected_corrections[0].reason == "evidence_substring_miss"
+
+    def test_cross_chunk_quote_is_accepted_against_validation_union(self):
+        quote = "Designed distributed systems at scale."
+        validation_union = (
+            f"Experience\n{quote}\n\n"
+            "Experience\nDesigned distributed\n\nExperience\nsystems at scale."
+        )
+        correction = _correction(new_evidence=[quote])
+        result = ReflectionResult(
+            approved=False, changed_requirements=[correction], review_notes=[]
+        )
+        with patch("src.llm.call", return_value=result):
+            corrected, reflected = reflect([_analysis(score=0.5)], validation_union)
+
+        assert corrected[0].score == 1.0
+        assert reflected.changed_requirements == [correction]
 
     def test_lowered_correction_with_fabricated_evidence_is_ignored(self):
         correction = _correction(

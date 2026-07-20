@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass, field
 from src.schemas import (
     Chunk, Requirement, RequirementAnalysis,
-    FinalReport, NaiveResult, ReflectionResult,
+    FinalReport, NaiveResult, ReflectionResult, RequirementPlan,
 )
 from src import docling_processor, planner, retriever as ret_mod, reranker, scorer
 from src import validate as val, calculator, reflector, router, config, llm
@@ -19,6 +19,7 @@ class DebugInfo:
     raw_model_responses: list[str] = field(default_factory=list)
     token_notes: list[str] = field(default_factory=list)
     reflection_result: ReflectionResult | None = None
+    requirement_plan: RequirementPlan | None = None
 
 
 def run_naive(pdf_bytes: bytes, job_description: str) -> NaiveResult:
@@ -60,7 +61,27 @@ def run_full(
 
     # --- 1. Docling conversion and structure-aware chunking ---
     _tick("Extracting and chunking resume", 0, n_stages)
-    resume_text, chunks = docling_processor.extract_and_chunk_resume(pdf_bytes)
+    try:
+        resume_text, chunks = docling_processor.extract_and_chunk_resume(pdf_bytes)
+    except docling_processor.UnassessableDocumentError as exc:
+        reason = str(exc)
+        _tick("Document requires human review", 1, n_stages)
+        report = FinalReport(
+            verdict="needs_review",
+            review_reason=reason,
+            match_score=0.0,
+            score_pre_reflection=0.0,
+            score_post_reflection=0.0,
+            reflection_delta=0.0,
+            all_requirements=[],
+            corrections=[],
+            recommendation=(
+                "The resume document could not be assessed reliably. "
+                "Review the original document or request a clearer, text-based PDF."
+            ),
+            reflection_notes=["Scoring was skipped because resume text was unassessable."],
+        )
+        return report, debug
     debug.resume_text = resume_text
     debug.chunks = chunks
 
@@ -71,14 +92,19 @@ def run_full(
 
     # --- 3. Requirement planning ---
     _tick("Planning requirements from job description", 2, n_stages)
-    requirements = planner.plan(job_description)
+    requirement_plan = planner.plan(job_description)
+    debug.requirement_plan = requirement_plan
+    requirements = requirement_plan.requirements
     debug.requirements = requirements
 
     # --- 4. Per-requirement: retrieve → rerank → score → validate (parallel) ---
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     def _process_requirement(req: Requirement):
-        bm25_ranked, vec_ranked, merged, top_rrf = hybrid.retrieve(req.requirement)
+        bm25_ranked, vec_ranked, merged, top_rrf = hybrid.retrieve(
+            req.requirement,
+            query_terms=req.query_terms,
+        )
         low_conf = top_rrf < config.LOW_RETRIEVAL_FLOOR
         candidate_chunks = hybrid.get_chunks(merged)
         top_chunks = reranker.rerank(req.requirement, candidate_chunks)
@@ -88,6 +114,7 @@ def run_full(
         ret_dbg = {
             "requirement_id": req.id,
             "requirement": req.requirement,
+            "query_terms": req.query_terms,
             "bm25_ranked": bm25_ranked,
             "vec_ranked": vec_ranked,
             "rrf_merged": merged,
@@ -173,8 +200,11 @@ def _make_recommendation(
     verdict: str,
     score: float,
 ) -> str:
-    matched   = [a for a in analyses if a.status == "matched"]
-    missing   = [a for a in analyses if a.status == "missing" and a.importance == "required"]
+    matched   = [a for a in analyses if a.kind == "scored" and a.status == "matched"]
+    missing   = [
+        a for a in analyses
+        if a.kind == "scored" and a.status == "missing" and a.importance == "required"
+    ]
     uncertain = [a for a in analyses if a.status == "uncertain"]
 
     parts = [f"Overall match: {score:.0f}/100."]

@@ -9,6 +9,8 @@ def weighted_score(analyses: list[RequirementAnalysis]) -> float:
     earned = 0.0
     possible = 0.0
     for a in analyses:
+        if a.kind == "gate":
+            continue
         if not 0.0 <= a.score <= 1.0:
             raise ValueError(
                 f"Invalid score for {a.requirement_id}: {a.score}"

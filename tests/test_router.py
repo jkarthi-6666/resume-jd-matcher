@@ -12,6 +12,8 @@ def _req(
     evidence_valid: bool | None = True,
     requirement_id: str = "R1",
     requirement: str = "Test requirement",
+    kind: str = "scored",
+    evidence: list[str] | None = None,
 ) -> RequirementAnalysis:
     """Distinct IDs and names by default would hide ordering and mapping bugs,
     so callers testing multi-requirement routing should pass them explicitly."""
@@ -19,9 +21,10 @@ def _req(
         requirement_id=requirement_id,
         requirement=requirement,
         importance=importance,
+        kind=kind,
         score=score,
         confidence=confidence,
-        evidence=["some evidence"] if score > 0 else [],
+        evidence=evidence if evidence is not None else (["some evidence"] if score > 0 else []),
         reason="test",
         retrieved_chunk_ids=[],
         evidence_valid=evidence_valid,
@@ -76,6 +79,45 @@ class TestRoute:
         verdict_loose, _  = route(analyses, confidence_floor=0.6)
         assert verdict_strict == "needs_review"
         assert verdict_loose  == "accept"
+
+
+class TestEligibilityGates:
+    def test_unknown_gate_routes_to_review(self):
+        gate = _req(
+            "required", 0.0, 0.95, kind="gate",
+            requirement="Must be authorized to work in the US without sponsorship",
+        )
+        assert gate.gate_status == "unknown"
+        verdict, reason = route([gate])
+        assert verdict == "needs_review"
+        assert "authorized to work" in reason
+        assert "unresolved" in reason
+
+    def test_violated_gate_routes_to_review_by_default(self):
+        gate = _req(
+            "required", 0.0, 0.95, kind="gate",
+            requirement="Must be authorized to work in the US without sponsorship",
+            evidence=["I require employer visa sponsorship."],
+        )
+        assert gate.gate_status == "violated"
+        verdict, reason = route([gate], reject_violated_gates=False)
+        assert verdict == "needs_review"
+        assert "violated" in reason
+
+    def test_violated_gate_can_reject_under_policy_flag(self):
+        gate = _req(
+            "required", 0.0, 0.95, kind="gate",
+            evidence=["I require employer visa sponsorship."],
+        )
+        verdict, _ = route([gate], reject_violated_gates=True)
+        assert verdict == "reject"
+
+    def test_satisfied_gate_preserves_scored_requirement_precedence(self):
+        gate = _req("required", 1.0, 0.95, kind="gate")
+        missing = _req("required", 0.0, 0.95, requirement="AWS")
+        verdict, reason = route([gate, missing])
+        assert verdict == "reject"
+        assert "AWS" in reason
 
 
 class TestMissingRequired:

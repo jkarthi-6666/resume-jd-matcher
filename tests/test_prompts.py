@@ -65,6 +65,15 @@ def test_planner_preserves_alternatives_and_parenthetical_examples():
     assert "not three separately mandatory products" in prompt
 
 
+def test_planner_requires_grounded_spans_gates_and_bounded_query_terms():
+    prompt = (PROMPTS / "planner.txt").read_text()
+
+    assert 'kind "gate"' in prompt
+    assert "exact substring, not a paraphrase" in prompt
+    assert "up to 5 query_terms" in prompt
+    assert "never related or adjacent" in prompt
+
+
 def test_reflector_does_not_invent_advanced_depth_requirements():
     prompt = (PROMPTS / "reflection.txt").read_text()
 

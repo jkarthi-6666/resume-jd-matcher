@@ -2,6 +2,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 Importance = Literal["required", "preferred", "unknown"]
+Kind       = Literal["scored", "gate"]
 # Category is descriptive metadata only; it is not used to score or route a
 # candidate.  Some JSON-mode models return ``unknown`` when the JD does not make
 # a requirement's category clear.  Treat that as an explicit fallback instead
@@ -10,7 +11,13 @@ Category   = Literal["technical_skill", "experience", "education",
                      "domain_knowledge", "soft_skill", "responsibility",
                      "unknown"]
 Status     = Literal["matched", "partially_matched", "missing", "uncertain"]
+GateStatus = Literal["satisfied", "violated", "unknown"]
 Verdict    = Literal["accept", "needs_review", "reject"]
+CorrectionRejectionReason = Literal[
+    "unknown_requirement", "invalid_score_bounds", "stale_old_score",
+    "missing_reason", "unchanged_score", "direction_mismatch",
+    "missing_new_evidence", "evidence_substring_miss",
+]
 
 
 class Requirement(BaseModel):
@@ -18,10 +25,14 @@ class Requirement(BaseModel):
     requirement: str
     category: Category
     importance: Importance
+    kind: Kind = "scored"
+    source_span: str = ""
+    query_terms: list[str] = Field(default_factory=list, max_length=5)
 
 
 class RequirementPlan(BaseModel):
     requirements: list[Requirement]
+    dropped_requirement_count: int = Field(default=0, ge=0)
 
 
 class Chunk(BaseModel):
@@ -31,7 +42,6 @@ class Chunk(BaseModel):
     body: str
     embed_text: str
     source: str
-    header_detected: bool = True
 
 
 class RequirementAnalysis(BaseModel):
@@ -43,6 +53,7 @@ class RequirementAnalysis(BaseModel):
     requirement_id: str
     requirement: str
     importance: Importance
+    kind: Kind = "scored"
     score: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
     evidence: list[str]
@@ -51,6 +62,7 @@ class RequirementAnalysis(BaseModel):
     low_retrieval_confidence: bool = False
     evidence_valid: bool | None = None
     status: Status | None = None
+    gate_status: GateStatus | None = None
 
 
 class RerankedChunk(BaseModel):
@@ -75,6 +87,12 @@ class Correction(BaseModel):
     new_evidence: list[str] = Field(default_factory=list)
 
 
+class CorrectionRejection(BaseModel):
+    requirement_id: str
+    reason: CorrectionRejectionReason
+    detail: str
+
+
 class ReflectionResult(BaseModel):
     approved: bool
     changed_requirements: list[Correction]
@@ -82,6 +100,7 @@ class ReflectionResult(BaseModel):
     # Internal reliability signal. LLM responses omit it and therefore default
     # to True; reflector.py sets it False when both audit attempts fail.
     completed: bool = True
+    rejected_corrections: list[CorrectionRejection] = Field(default_factory=list)
 
 
 class FinalReport(BaseModel):

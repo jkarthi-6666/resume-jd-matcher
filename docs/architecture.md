@@ -5,7 +5,7 @@
 ```
 Resume PDF                                   Job Description
     ↓                                              ↓
-Docling DocumentConverter                 Planner extracts requirements
+Docling DocumentConverter                 Planner extracts requirements + source spans
     ↓                                              ↓
 DoclingDocument                           Pydantic validation (Literal types)
     ↓                                              ↓
@@ -18,7 +18,7 @@ BM25 index + cosine-similarity vector index        │
                          ↓
               For each requirement:
                          ↓
-        BM25 top 8  +  Vector top 8  →  RRF merge
+ BM25 top 8 (+ query terms) + Vector top 8 (raw requirement) → RRF merge
                          ↓
               Rerank → top 3 chunks
                          ↓
@@ -53,14 +53,28 @@ its HybridChunker preserves that hierarchy while applying token-aware splitting
 and peer merging. `contextualize()` enriches each embedding string with detected
 headings so bullets retain their role or section context.
 
-The full-resume text used by reflection is assembled from the same
-contextualized chunk strings. This guarantees that text exposed to scoring is
-also available to the full-resume evidence validator.
+The full-resume validation corpus is the union of Docling's contiguous
+reading-order export and the contextualized chunk assembly. The first preserves
+quotes spanning chunk boundaries; the second guarantees that every string
+exposed to scoring remains available to the reflector's evidence validator.
+Together they preserve the scorer-superset invariant without requiring headings
+injected at chunk boundaries to appear inside original prose.
 
 ### Why hybrid retrieval?
 - BM25 guarantees exact keyword hits that embeddings can miss.
 - Embeddings handle paraphrase that BM25 can miss.
 - RRF merges both in 10 lines with nothing to tune.
+
+The planner supplies up to five alternate surface forms for each requirement.
+They expand only the BM25 token list; the vector query remains the normalized
+requirement text so the two retrieval arms retain complementary behavior.
+
+Planner output is source-grounded before retrieval. Every requirement carries a
+verbatim `source_span`, checked with the same normalized-substring definition as
+resume evidence. Invalid items are dropped independently and counted. Remaining
+requirements are exact-deduplicated, then embedded once and merged above the
+configurable cosine threshold; importance and category precedence is shared by
+both deduplication passes.
 
 The vector index uses normalized NumPy matrices and dot product, which is cosine
 similarity. This retains the previous ranking semantics without loading FAISS in
@@ -90,7 +104,16 @@ completed successfully. If any safeguard fails, the original low confidence is
 preserved and the router escalates the required item.
 
 ### Routing policy
-Evaluated in order; the first rule that matches wins:
+Requirements have an orthogonal `kind`: ordinary competencies are `scored`,
+while explicit location, schedule, travel, relocation, and work-authorization
+constraints are `gate`. Category remains descriptive metadata only. Gates never
+enter either side of the weighted-score calculation. Python resolves them to
+`satisfied`, `violated`, or `unknown`; resume silence is `unknown`, not a gap.
+
+Gate routing runs first: unknown gates require human review, and explicit
+violations also require review unless a deployment opts into rejection with
+`REJECT_VIOLATED_GATES=true`. Satisfied gates then yield to the scored policy.
+The scored rules retain their prior order; the first matching rule wins:
 
 ```
 unverifiable evidence on a required item        -> needs_review
@@ -104,6 +127,14 @@ The two review rules are checked before the reject rule on purpose. A requiremen
 
 One missing required qualification is sufficient to reject: scoring 1.0 on Python does not excuse scoring 0.0 on a required AWS qualification.
 
+After Docling conversion, the pipeline also checks document sufficiency before
+building an index. It requires at least 100 alphabetic characters and an
+alphabetic share of at least 0.5 among non-whitespace characters. The combined
+signal replaces the legacy raw 200-character floor: compact legitimate resumes
+can pass, while short OCR noise and long symbol-heavy output cannot. Failure is
+a typed unassessable-document outcome that returns `needs_review` without
+planning or scoring.
+
 `derive_status()` and the router read the same thresholds from `config`, so a requirement badged `matched` in the UI is by construction one the router will accept. Hardcoding either independently lets the badge and the verdict disagree.
 
 ## File Map
@@ -111,8 +142,6 @@ One missing required qualification is sufficient to reject: scoring 1.0 on Pytho
 | File | Responsibility |
 |---|---|
 | `src/docling_processor.py` | Docling conversion, hybrid chunking, and `Chunk` mapping |
-| `src/parser.py` | Legacy PyMuPDF extraction; retained temporarily, inactive |
-| `src/chunker.py` | Legacy regex/date chunking; retained temporarily, inactive |
 | `src/embeddings.py` | Cosine-similarity vector index |
 | `src/retriever.py` | BM25 + cosine vector retrieval + RRF |
 | `src/reranker.py` | LLM rerank (cheap model) |

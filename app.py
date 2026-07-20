@@ -446,15 +446,22 @@ def _render_debug(debug, report):
         for chunk in debug.chunks:
             with st.expander(f"[{chunk.chunk_id}] {chunk.header} ({chunk.section})", expanded=False):
                 st.text(chunk.embed_text)
-                st.caption(f"header_detected={chunk.header_detected}")
 
     with tab3:
         st.write(f"Requirements extracted: {len(debug.requirements)}")
+        if debug.requirement_plan and debug.requirement_plan.dropped_requirement_count:
+            st.warning(
+                f"Dropped {debug.requirement_plan.dropped_requirement_count} "
+                "planner requirement(s) with invalid job-description source spans."
+            )
         for req in debug.requirements:
             st.markdown(
                 f"- `{req.id}` **{req.requirement}** "
-                f"({req.category} / {req.importance})"
+                f"({req.category} / {req.importance} / {req.kind})"
             )
+            st.caption(f"JD source: {req.source_span}")
+            if req.query_terms:
+                st.caption(f"BM25 aliases: {', '.join(req.query_terms)}")
 
     with tab4:
         for rd in debug.retrieval_debug:
@@ -544,7 +551,7 @@ if run_naive_btn and inputs_ready:
         try:
             st.session_state["naive_result"] = pipeline.run_naive(pdf_bytes, job_description)
             st.session_state["naive_error"] = None
-        except ValueError as e:
+        except (ValueError, TimeoutError) as e:
             st.session_state["naive_result"] = None
             st.session_state["naive_error"] = str(e)
         st.session_state["naive_input_sig"] = current_sig
@@ -560,7 +567,7 @@ if run_full_btn and inputs_ready:
         report, debug = pipeline.run_full(pdf_bytes, job_description, progress_cb=_on_progress)
         st.session_state["full_result"] = (report, debug)
         st.session_state["full_error"] = None
-    except ValueError as e:
+    except (ValueError, TimeoutError) as e:
         st.session_state["full_result"] = None
         st.session_state["full_error"] = str(e)
     finally:
