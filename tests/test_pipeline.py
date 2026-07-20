@@ -8,10 +8,10 @@ hits the network. See tests/conftest.py.
 import re
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from src.schemas import (
-    RequirementPlan, Requirement, RequirementAnalysis,
+    Chunk, RequirementPlan, Requirement, RequirementAnalysis,
     RerankerResult, RerankedChunk, ReflectionResult, NaiveResult,
 )
 from tests.conftest import fake_embeddings
@@ -27,6 +27,28 @@ Python, REST, Kubernetes, Docker
 """
 
 MOCK_JD = "We need a Python developer with REST API experience."
+
+MOCK_CHUNKS = [
+    Chunk(
+        chunk_id="chunk_000",
+        section="Experience",
+        header="Senior Engineer, Acme",
+        body="Built Python REST APIs. Led Kubernetes migration.",
+        embed_text=(
+            "Experience\nSenior Engineer, Acme\n"
+            "Built Python REST APIs. Led Kubernetes migration."
+        ),
+        source="resume.pdf",
+    ),
+    Chunk(
+        chunk_id="chunk_001",
+        section="Skills",
+        header="Skills",
+        body="Python, REST, Kubernetes, Docker",
+        embed_text="Skills\nPython, REST, Kubernetes, Docker",
+        source="resume.pdf",
+    ),
+]
 
 
 def _fake_llm_call(prompt, model, schema, temperature=0.0, system=""):
@@ -82,22 +104,14 @@ def _fake_llm_call(prompt, model, schema, temperature=0.0, system=""):
     raise AssertionError(f"Unexpected schema requested: {schema}")
 
 
-@pytest.fixture
-def mock_pdf():
-    page = MagicMock()
-    page.get_text.return_value = MOCK_RESUME * 3
-    doc = MagicMock()
-    doc.__iter__ = MagicMock(return_value=iter([page]))
-    doc.close = MagicMock()
-    return doc
-
-
 class TestPipelineMocked:
     @patch("src.embeddings.get_embeddings", side_effect=fake_embeddings)
     @patch("src.llm.call", side_effect=_fake_llm_call)
-    @patch("fitz.open")
-    def test_full_pipeline_runs(self, mock_fitz, mock_call, mock_embed, mock_pdf):
-        mock_fitz.return_value = mock_pdf
+    @patch(
+        "src.pipeline.docling_processor.extract_and_chunk_resume",
+        return_value=(MOCK_RESUME, MOCK_CHUNKS),
+    )
+    def test_full_pipeline_runs(self, mock_process, mock_call, mock_embed):
 
         from src.pipeline import run_full
         from src.planner import clear_cache
@@ -111,16 +125,18 @@ class TestPipelineMocked:
         assert len(report.all_requirements) == 2
         assert len(debug.chunks) > 0
         assert len(debug.requirements) == 2
+        mock_process.assert_called_once_with(b"fake_pdf")
 
     @patch("src.embeddings.get_embeddings", side_effect=fake_embeddings)
     @patch("src.llm.call", side_effect=_fake_llm_call)
-    @patch("fitz.open")
+    @patch(
+        "src.pipeline.docling_processor.extract_and_chunk_resume",
+        return_value=(MOCK_RESUME, MOCK_CHUNKS),
+    )
     def test_full_pipeline_preserves_requirement_order(
-        self, mock_fitz, mock_call, mock_embed, mock_pdf
+        self, mock_process, mock_call, mock_embed
     ):
         """Requirements are scored concurrently but must report in plan order."""
-        mock_fitz.return_value = mock_pdf
-
         from src.pipeline import run_full
         from src.planner import clear_cache
         clear_cache()
@@ -130,9 +146,11 @@ class TestPipelineMocked:
         assert [a.requirement_id for a in report.all_requirements] == ["R1", "R2"]
 
     @patch("src.llm.call", side_effect=_fake_llm_call)
-    @patch("fitz.open")
-    def test_naive_mode_runs(self, mock_fitz, mock_call, mock_pdf):
-        mock_fitz.return_value = mock_pdf
+    @patch(
+        "src.pipeline.docling_processor.extract_and_chunk_resume",
+        return_value=(MOCK_RESUME, MOCK_CHUNKS),
+    )
+    def test_naive_mode_runs(self, mock_process, mock_call):
 
         from src.pipeline import run_naive
 
@@ -140,13 +158,12 @@ class TestPipelineMocked:
 
         assert 0 <= result.match_score <= 100
         assert "Python" in result.matched_skills
+        mock_process.assert_called_once_with(b"fake_pdf")
 
-    @patch("src.llm.call", side_effect=_fake_llm_call)
-    @patch("fitz.open")
-    def test_empty_job_description_rejected(self, mock_fitz, mock_call, mock_pdf):
-        mock_fitz.return_value = mock_pdf
-
+    @patch("src.pipeline.docling_processor.extract_and_chunk_resume")
+    def test_empty_job_description_rejected(self, mock_process):
         from src.pipeline import run_full
 
         with pytest.raises(ValueError, match="Job description is empty"):
             run_full(b"fake_pdf", "   ")
+        mock_process.assert_not_called()

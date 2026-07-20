@@ -143,19 +143,22 @@ the baseline is too small to quantify how often it succeeds.
 ### Short resumes
 
 Resumes with fewer than three or four distinct entries provide little retrieval
-diversity. BM25 and FAISS can both return rankings even when none of the chunks
-are useful.
+diversity. BM25 and cosine similarity can both return rankings even when none
+of the chunks are useful.
 
 ### Non-standard PDF layouts
 
-Section detection is heuristic. Two-column resumes, tables, unusual headings,
-and reading-order problems can produce malformed chunks. These formats are not
-represented in the current synthetic evaluation set.
+Docling provides layout-aware reading order and structure detection, but complex
+two-column resumes, decorative templates, and dense tables can still produce
+incorrect element ordering or heading associations. These formats are not yet
+represented in the synthetic evaluation set.
 
-### No OCR support
+### OCR quality and cold-start cost
 
-Image-only PDFs fail with a clear error when fewer than 200 characters are
-extracted, but the application cannot process them.
+Docling enables OCR for scanned resumes, but recognition accuracy depends on
+scan quality, language, fonts, and the available OCR runtime. The first
+conversion in a fresh environment may also be slow while Docling initializes
+its document models.
 
 ## Open Work
 

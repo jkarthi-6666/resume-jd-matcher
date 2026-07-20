@@ -5,13 +5,15 @@
 ```
 Resume PDF                                   Job Description
     ↓                                              ↓
-Extract text (PyMuPDF)                    Planner extracts requirements
+Docling DocumentConverter                 Planner extracts requirements
     ↓                                              ↓
-Chunk by entry (role/project/degree)      Pydantic validation (Literal types)
+DoclingDocument                           Pydantic validation (Literal types)
     ↓                                              ↓
-Prepend header to each chunk                       │
+Docling HybridChunker                              │
     ↓                                              │
-BM25 index + FAISS index                           │
+Map contextualized output to `Chunk`               │
+    ↓                                              │
+BM25 index + cosine-similarity vector index        │
     └────────────────────┬─────────────────────────┘
                          ↓
               For each requirement:
@@ -44,13 +46,26 @@ BM25 index + FAISS index                           │
 
 ## Design Decisions
 
-### Why entry-based chunking, not token windows?
-A token window orphans bullets from their role headers. The scorer then sees context-free text and defaults to a middling score. One chunk per job/project/degree ensures the header (role, company, dates) is always present in what the model sees.
+### Why Docling HybridChunker?
+The previous regex/date chunker depended on conventional headings and date
+formats. Docling first reconstructs document structure and reading order, then
+its HybridChunker preserves that hierarchy while applying token-aware splitting
+and peer merging. `contextualize()` enriches each embedding string with detected
+headings so bullets retain their role or section context.
+
+The full-resume text used by reflection is assembled from the same
+contextualized chunk strings. This guarantees that text exposed to scoring is
+also available to the full-resume evidence validator.
 
 ### Why hybrid retrieval?
 - BM25 guarantees exact keyword hits that embeddings can miss.
 - Embeddings handle paraphrase that BM25 can miss.
 - RRF merges both in 10 lines with nothing to tune.
+
+The vector index uses normalized NumPy matrices and dot product, which is cosine
+similarity. This retains the previous ranking semantics without loading FAISS in
+the same process as Docling's Torch runtime, whose separate OpenMP runtimes can
+abort on macOS.
 
 ### Why evidence validation?
 The model can hallucinate plausible-sounding quotes. A substring check in Python is the only way to prove evidence is real. Without this, every "evidence" claim is just the model describing itself.
@@ -95,10 +110,11 @@ One missing required qualification is sufficient to reject: scoring 1.0 on Pytho
 
 | File | Responsibility |
 |---|---|
-| `src/parser.py` | PDF text extraction, ligature fixes |
-| `src/chunker.py` | Entry-based resume chunking |
-| `src/embeddings.py` | FAISS vector index |
-| `src/retriever.py` | BM25 + FAISS + RRF |
+| `src/docling_processor.py` | Docling conversion, hybrid chunking, and `Chunk` mapping |
+| `src/parser.py` | Legacy PyMuPDF extraction; retained temporarily, inactive |
+| `src/chunker.py` | Legacy regex/date chunking; retained temporarily, inactive |
+| `src/embeddings.py` | Cosine-similarity vector index |
+| `src/retriever.py` | BM25 + cosine vector retrieval + RRF |
 | `src/reranker.py` | LLM rerank (cheap model) |
 | `src/planner.py` | JD → requirements (cached, temp=0) |
 | `src/scorer.py` | Per-requirement scoring |

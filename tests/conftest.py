@@ -23,9 +23,9 @@ EMBED_DIM = 16
 def fake_embeddings(texts, model=None, input_type="passage"):
     """Deterministic vector per text, one per input.
 
-    Returning exactly len(texts) vectors matters: VectorIndex.build() adds the
-    result to FAISS but keeps its own self._chunks list, so a count mismatch
-    desyncs the two and query() hits an out-of-range index.
+    Returning exactly len(texts) vectors matters: VectorIndex.build() stores the
+    result alongside its own chunk list, so a count mismatch desynchronizes IDs
+    from their vectors.
     """
     out = []
     for text in texts:
