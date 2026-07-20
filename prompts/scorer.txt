@@ -1,6 +1,6 @@
 You are evaluating ONE job requirement against retrieved resume evidence.
 
-Requirement: {requirement}   (importance: {importance})
+Requirement: {requirement}   (importance: {importance}, kind: {kind})
 
 Evidence chunks from the resume:
 {retrieved_chunks}
@@ -29,6 +29,9 @@ Rules:
    clear direct evidence or a clear absence should normally have high confidence.
 7. Do NOT output a status field.
 8. Return valid JSON only.
+9. For kind "gate", score 1.0 only for explicit evidence that the constraint is
+   satisfied and 0.0 for explicit evidence that it is violated. Resume silence
+   is still 0.0 with no evidence; Python will resolve that absence as unknown.
 
 Scoring scale:
 - 1.0: Clearly supported
@@ -43,6 +46,7 @@ Return JSON with this exact structure:
   "requirement_id": "{requirement_id}",
   "requirement": "{requirement}",
   "importance": "{importance}",
+  "kind": "{kind}",
   "score": 0.0,
   "confidence": 0.8,
   "evidence": [],

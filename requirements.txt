@@ -1,7 +1,6 @@
 streamlit
 # Keep Docling's fast-moving 2.x API within the version used by this project.
 docling>=2.113.0,<2.114.0
-pymupdf
 pydantic>=2.0
 rank-bm25
 numpy

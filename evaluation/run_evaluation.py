@@ -71,8 +71,8 @@ def _full_runner(pdf_bytes: bytes, job_description: str) -> dict[str, Any]:
         chunk_id="evaluation_resume",
         section="Full",
         header="Full resume",
-        body=debug.resume_text,
-        embed_text=debug.resume_text,
+        body=debug.validation_corpus,
+        embed_text=debug.validation_corpus,
         source="evaluation",
     )
     quotes = [quote for analysis in report.all_requirements for quote in analysis.evidence]
@@ -96,6 +96,22 @@ def _full_runner(pdf_bytes: bytes, job_description: str) -> dict[str, Any]:
             ),
             "lowered_correction_count": sum(
                 correction.direction == "lowered" for correction in report.corrections
+            ),
+            "rejected_correction_reasons": [
+                rejection.reason
+                for rejection in (
+                    debug.reflection_result.rejected_corrections
+                    if debug.reflection_result else []
+                )
+            ],
+            "planner_dropped_requirement_count": (
+                debug.requirement_plan.dropped_requirement_count
+                if debug.requirement_plan else 0
+            ),
+            "planner_output_requirement_count": (
+                len(debug.requirement_plan.requirements)
+                + debug.requirement_plan.dropped_requirement_count
+                if debug.requirement_plan else 0
             ),
         },
     }
@@ -151,7 +167,10 @@ def run_cases(
 
 def _expected_score(case_result: dict[str, Any]) -> float | None:
     requirements = case_result.get("requirements", [])
-    labeled = [r for r in requirements if "ground_truth_score" in r]
+    labeled = [
+        r for r in requirements
+        if "ground_truth_score" in r and r.get("kind", "scored") != "gate"
+    ]
     if not labeled:
         return None
     weights = {"required": 2, "preferred": 1, "unknown": 1}
@@ -239,6 +258,24 @@ def calculate_metrics(results: list[dict[str, Any]], mode: str) -> dict[str, Any
             ),
         }
     )
+    planner_outputs = sum(
+        item.get("diagnostics", {}).get("planner_output_requirement_count", 0)
+        for item in completed
+    )
+    planner_dropped = sum(
+        item.get("diagnostics", {}).get("planner_dropped_requirement_count", 0)
+        for item in completed
+    )
+    rejection_reason_counts: dict[str, int] = {}
+    for item in completed:
+        for reason in item.get("diagnostics", {}).get(
+            "rejected_correction_reasons", []
+        ):
+            rejection_reason_counts[reason] = rejection_reason_counts.get(reason, 0) + 1
+    metrics["planner_hallucination_rate"] = (
+        round(planner_dropped / planner_outputs, 4) if planner_outputs else 0.0
+    )
+    metrics["rejected_correction_reason_counts"] = rejection_reason_counts
     return metrics
 
 

@@ -86,3 +86,25 @@ class TestHybridRetriever:
         ids = [c.chunk_id for c in chunks]
         assert "chunk_001" in ids
         assert "chunk_003" in ids
+
+    def test_query_terms_expand_bm25_but_not_vector_query(self):
+        chunks = [
+            _make_chunk("chunk_k8s", "Operated k8s workloads in production."),
+            _make_chunk("chunk_java", "Built Java web services."),
+            _make_chunk("chunk_sql", "Optimized SQL reporting queries."),
+        ]
+        retriever = HybridRetriever()
+        retriever.build(chunks)
+
+        with patch.object(
+            retriever._vector_index,
+            "query",
+            return_value=[("chunk_java", 0.9)],
+        ) as vector_query:
+            bm25_ranked, _, _, _ = retriever.retrieve(
+                "container orchestration",
+                query_terms=["k8s", "Kubernetes"],
+            )
+
+        assert bm25_ranked[0] == "chunk_k8s"
+        vector_query.assert_called_once_with("container orchestration", 8)

@@ -15,7 +15,8 @@ Interpretation rules:
    candidate requirements.
 3. Include a location, schedule, travel, relocation, or work-authorization
    constraint only when the text explicitly states that the candidate must meet
-   it. Do not infer such a constraint from a metadata field.
+   it. Mark it with kind "gate". Do not infer such a constraint from a metadata
+   field. Mark every ordinary competency or responsibility with kind "scored".
 4. Sections such as Required Qualifications, Requirements, Must Have, Key
    Skills, Responsibilities, What You Will Do, and similar sections describe
    required items unless an item explicitly says it is optional or preferred.
@@ -40,7 +41,14 @@ Interpretation rules:
    domain_knowledge, soft_skill, responsibility, unknown. Use unknown only when
    none of the other categories applies.
 9. Use only these importance values: required, preferred, unknown.
-10. Return valid JSON only. Assign sequential IDs R1, R2, R3, and so on.
+10. For every requirement, copy a verbatim source_span from between the
+    JOB_DESCRIPTION markers. It must be an exact substring, not a paraphrase;
+    requirement may be a normalized restatement, but source_span may not.
+11. Emit up to 5 query_terms containing surface forms a resume may use for the
+    same requirement: abbreviations and expansions, or common tool names for a
+    named capability. Include alternate names only, never related or adjacent
+    skills.
+12. Return valid JSON only. Assign sequential IDs R1, R2, R3, and so on.
 
 Return JSON with this exact structure:
 {{
@@ -49,7 +57,10 @@ Return JSON with this exact structure:
       "id": "R1",
       "requirement": "5-7 years of relevant experience",
       "category": "experience",
-      "importance": "required"
+      "importance": "required",
+      "kind": "scored",
+      "source_span": "5-7 years of relevant experience",
+      "query_terms": []
     }}
   ]
 }}

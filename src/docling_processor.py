@@ -4,11 +4,52 @@ from io import BytesIO
 from typing import Any
 
 from src.schemas import Chunk
+from src import config
 
-__all__ = ["extract_and_chunk_resume"]
+__all__ = [
+    "DocumentProcessingTimeoutError",
+    "UnassessableDocumentError",
+    "build_validation_corpus",
+    "extract_and_chunk_resume",
+]
 
 _MAX_PDF_BYTES = 25 * 1024 * 1024
 _DOCUMENT_TIMEOUT_SECONDS = 120.0
+
+
+class UnassessableDocumentError(ValueError):
+    """The document was processed, but does not contain assessable resume text."""
+
+
+class DocumentProcessingTimeoutError(TimeoutError):
+    """Docling exceeded its configured document-processing deadline."""
+
+
+def _content_is_sufficient(text: str) -> bool:
+    """Reject negligible or symbol-heavy OCR output without penalizing brevity."""
+    non_whitespace = [char for char in text if not char.isspace()]
+    if not non_whitespace:
+        return False
+    alphabetic = sum(char.isalpha() for char in non_whitespace)
+    return (
+        alphabetic >= config.MIN_RESUME_ALPHABETIC_CHARS
+        and alphabetic / len(non_whitespace) >= config.MIN_RESUME_ALPHA_RATIO
+    )
+
+
+def _contiguous_resume_text(document: Any, chunks: list[Chunk]) -> str:
+    """Return Docling reading-order text, falling back to plain chunk bodies."""
+    exporter = getattr(document, "export_to_text", None)
+    contiguous = str(exporter()).strip() if callable(exporter) else ""
+    if not contiguous:
+        contiguous = "\n\n".join(chunk.body for chunk in chunks).strip()
+    return contiguous
+
+
+def build_validation_corpus(resume_text: str, chunks: list[Chunk]) -> str:
+    """Union contiguous prose with every contextualized scorer-visible string."""
+    contextualized = "\n\n".join(chunk.embed_text for chunk in chunks).strip()
+    return "\n\n".join(part for part in (resume_text, contextualized) if part)
 
 
 @lru_cache(maxsize=1)
@@ -61,7 +102,6 @@ def _to_app_chunk(
         body=body,
         embed_text=contextualized or body,
         source=source,
-        header_detected=bool(headings),
     )
 
 
@@ -69,12 +109,11 @@ def extract_and_chunk_resume(
     pdf_bytes: bytes,
     source: str = "resume.pdf",
 ) -> tuple[str, list[Chunk]]:
-    """Convert an in-memory PDF and return evidence-safe text and app chunks.
+    """Convert an in-memory PDF and return contiguous text plus app chunks.
 
-    The returned full text is assembled from the same contextualized strings
-    used for retrieval and scoring. This preserves the existing evidence
-    contract: anything a scorer can quote from a chunk is also present when the
-    reflector validates a correction against the full resume.
+    The returned text is the original reading order used for document-quality
+    checks and model prompts. Call ``build_validation_corpus`` when evidence
+    validation also needs the contextualized strings exposed to scoring.
     """
     if not pdf_bytes:
         raise ValueError("Resume PDF is empty.")
@@ -90,6 +129,10 @@ def extract_and_chunk_resume(
             stream,
             max_file_size=_MAX_PDF_BYTES,
         )
+        if result.has_timeout_errors():
+            raise DocumentProcessingTimeoutError(
+                "Resume processing took too long. Try a smaller or simpler PDF."
+            )
         document = result.document
         chunker = _get_chunker()
 
@@ -105,13 +148,26 @@ def extract_and_chunk_resume(
                     source=source,
                 )
             )
+    except DocumentProcessingTimeoutError:
+        raise
+    except TimeoutError as exc:
+        raise DocumentProcessingTimeoutError(
+            "Resume processing took too long. Try a smaller or simpler PDF."
+        ) from exc
     except Exception as exc:
         raise ValueError(f"Could not process resume PDF with Docling: {exc}") from exc
 
     if not chunks:
-        raise ValueError(
-            "Docling could not extract usable text from the resume PDF."
+        raise UnassessableDocumentError(
+            "We could not read usable text from this resume. Human review or a "
+            "clearer, text-based PDF is required."
         )
 
-    resume_text = "\n\n".join(chunk.embed_text for chunk in chunks).strip()
+    resume_text = _contiguous_resume_text(document, chunks)
+    if not _content_is_sufficient(resume_text):
+        raise UnassessableDocumentError(
+            "We could not read enough reliable text from this resume to assess "
+            "qualifications. The PDF may be a poor-quality scan or contain "
+            "non-linguistic OCR output; human review is required."
+        )
     return resume_text, chunks

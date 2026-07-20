@@ -27,6 +27,7 @@ class HybridRetriever:
         query: str,
         bm25_top_k: int | None = None,
         vector_top_k: int | None = None,
+        query_terms: list[str] | None = None,
     ) -> tuple[list[str], list[str], list[str], float]:
         """
         Returns (bm25_ranked_ids, vector_ranked_ids, rrf_merged_ids, top_rrf_score).
@@ -35,7 +36,7 @@ class HybridRetriever:
         bk = bm25_top_k or config.BM25_TOP_K
         vk = vector_top_k or config.VECTOR_TOP_K
 
-        bm25_ranked = self._bm25_query(query, bk)
+        bm25_ranked = self._bm25_query(query, bk, query_terms)
         vec_ranked  = self._vector_query(query, vk)
         merged      = rrf(bm25_ranked, vec_ranked, k=config.RRF_K)
 
@@ -45,8 +46,18 @@ class HybridRetriever:
     def get_chunks(self, chunk_ids: list[str]) -> list[Chunk]:
         return [self._chunk_map[cid] for cid in chunk_ids if cid in self._chunk_map]
 
-    def _bm25_query(self, query: str, top_k: int) -> list[str]:
+    def _bm25_query(
+        self,
+        query: str,
+        top_k: int,
+        query_terms: list[str] | None = None,
+    ) -> list[str]:
         tokens = query.lower().split()
+        tokens.extend(
+            token
+            for term in (query_terms or [])
+            for token in term.lower().split()
+        )
         scores = self._bm25.get_scores(tokens)
         ranked = sorted(range(len(self._chunks)), key=lambda i: scores[i], reverse=True)
         return [self._chunks[i].chunk_id for i in ranked[:top_k]]

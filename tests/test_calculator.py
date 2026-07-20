@@ -4,11 +4,12 @@ from src.schemas import RequirementAnalysis
 from src.calculator import weighted_score
 
 
-def _req(score: float, importance: str) -> RequirementAnalysis:
+def _req(score: float, importance: str, kind: str = "scored") -> RequirementAnalysis:
     return RequirementAnalysis(
         requirement_id="R1",
         requirement="test",
         importance=importance,
+        kind=kind,
         score=score,
         confidence=0.9,
         evidence=[],
@@ -46,6 +47,15 @@ class TestWeightedScore:
     def test_all_zeros(self):
         analyses = [_req(0.0, "required"), _req(0.0, "preferred")]
         assert weighted_score(analyses) == 0.0
+
+    def test_gate_is_excluded_from_numerator_and_denominator(self):
+        scored_only = [_req(1.0, "required")]
+        with_unmet_required_gate = [
+            *scored_only,
+            _req(0.0, "required", kind="gate"),
+        ]
+        assert weighted_score(with_unmet_required_gate) == weighted_score(scored_only)
+        assert weighted_score(with_unmet_required_gate) == 100.0
 
     def test_mixed(self):
         analyses = [

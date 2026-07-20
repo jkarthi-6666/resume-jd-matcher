@@ -43,6 +43,20 @@ REQUIRED_ACCEPT_SCORE = float(os.getenv("REQUIRED_ACCEPT_SCORE", "0.75"))
 # Score below which a requirement counts as missing rather than partially met.
 PARTIAL_MATCH_SCORE = float(os.getenv("PARTIAL_MATCH_SCORE", "0.25"))
 
+# Eligibility constraints are policy inputs, not scored qualifications. An
+# explicit violation escalates by default; deployments may opt into rejection.
+REJECT_VIOLATED_GATES = os.getenv("REJECT_VIOLATED_GATES", "false").strip().lower() in (
+    "1", "true", "yes", "on",
+)
+
+# OCR garbage can be long, while a legitimate compact resume can be shorter
+# than the legacy 200-character floor. Require a modest amount of alphabetic
+# content plus a majority-alphabetic non-whitespace signal instead.
+MIN_RESUME_ALPHABETIC_CHARS = int(os.getenv("MIN_RESUME_ALPHABETIC_CHARS", "100"))
+MIN_RESUME_ALPHA_RATIO = float(os.getenv("MIN_RESUME_ALPHA_RATIO", "0.5"))
+
+SEMANTIC_DEDUP_THRESHOLD = float(os.getenv("SEMANTIC_DEDUP_THRESHOLD", "0.9"))
+
 
 def validate_config() -> None:
     if LLM_PROVIDER == "nvidia" and not NVIDIA_API_KEY:

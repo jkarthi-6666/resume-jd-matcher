@@ -63,7 +63,7 @@ instead of quietly billing a live API.
 
 ## Evaluation
 
-The repository includes five privacy-safe synthetic resumes with labeled scores
+The repository includes eight privacy-safe synthetic resumes with labeled scores
 and expected verdicts. Regenerate their PDFs and validate the dataset without
 calling a model provider:
 
@@ -101,6 +101,10 @@ All model and threshold settings are in `.env`. See `.env.example` for the full 
 | `CONFIDENCE_FLOOR` | `0.7` | Below this on a required item, escalate to review |
 | `REQUIRED_ACCEPT_SCORE` | `0.75` | At or above this, a requirement counts as met |
 | `PARTIAL_MATCH_SCORE` | `0.25` | Below this, a required item is missing and rejects |
+| `REJECT_VIOLATED_GATES` | `false` | Opt-in policy to reject explicitly violated eligibility gates; unknown gates always review |
+| `MIN_RESUME_ALPHABETIC_CHARS` | `100` | Minimum alphabetic content after extraction/OCR |
+| `MIN_RESUME_ALPHA_RATIO` | `0.5` | Minimum alphabetic share of non-whitespace extracted text |
+| `SEMANTIC_DEDUP_THRESHOLD` | `0.9` | Cosine threshold for merging paraphrased JD requirements |
 | `RERANK_TOP_N` | `3` | Chunks passed to the scorer |
 
 Switching `LLM_PROVIDER` requires the matching key (`OPENAI_API_KEY`,
@@ -114,8 +118,6 @@ startup. Anthropic has no embedding endpoint, so `EMBED_PROVIDER` falls back to
 src/
   schemas.py       Pydantic models (Literal types throughout)
   docling_processor.py  PDF → Docling document → structure-aware chunks
-  parser.py        Legacy PyMuPDF extractor (not on the active pipeline path)
-  chunker.py       Legacy regex chunker (not on the active pipeline path)
   embeddings.py    In-memory cosine-similarity vector index
   retriever.py     BM25 + cosine vector retrieval + RRF
   reranker.py      LLM rerank

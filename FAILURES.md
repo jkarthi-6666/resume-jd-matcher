@@ -78,14 +78,40 @@ and needs validation on real resumes.
 
 Across the current five-case run, reflection changed no scores. That is too
 little data to claim that reflection reliably recovers retrieval misses or
-corrects inflation. The evaluator also does not yet count proposed corrections
-that were rejected by the reflector's invariant checks.
+corrects inflation. Rejected corrections now carry structured reasons (including
+evidence substring misses, direction errors, stale scores, and bounds errors),
+but the current saved baseline predates that instrumentation and therefore does
+not yet quantify them.
 
 ### Provider output is not guaranteed to be deterministic
 
 Temperature zero reduces randomness but does not guarantee identical provider
 responses. The saved metrics describe one run. Repeated-run variance is not yet
 measured, and a five-case result can change sharply when a single verdict moves.
+
+Cosine ranking now uses stable NumPy sorting, so equal similarity scores retain
+chunk order deterministically; the former FAISS `IndexFlatIP` path did not make
+that tie behavior explicit. This narrows one local source of run-to-run variance
+but does not address provider variance.
+
+Docling's layout and OCR models are another nondeterminism source. The Python
+package is constrained to `>=2.113.0,<2.114.0`, but downloaded model weights are
+not pinned by this repository, so a rebuilt model cache may change extraction,
+reading order, or chunk boundaries.
+
+### Token usage and baseline comparability
+
+The first cross-chunk evidence fix passed the union of contiguous text and
+contextualized chunks to both the reflector and naive baseline. On the seven
+readable synthetic resumes this measured 1.996 times the characters and 2.0
+times the whitespace-token proxy of contiguous text. It also made the
+100-alphabetic-character quality floor represent roughly 50 unique characters.
+
+The pipeline now keeps these concerns separate: contiguous text alone feeds the
+naive baseline and reflector prompt and is used for document sufficiency; the
+larger union is used only for evidence validation. Exact provider token usage,
+latency, and cost still need measurement because tokenizer behavior and model
+output lengths vary by provider.
 
 ### Evidence validation checks quotation, not meaning
 
@@ -100,8 +126,13 @@ production experience.
 ### Requirement extraction is the ceiling
 
 If the planner omits, duplicates, or misclassifies a job requirement, every
-downstream stage evaluates the wrong plan. There is no independent check of the
-planner output against the original job description.
+downstream stage evaluates the wrong plan. Planner requirements now require a
+verbatim JD source span, invalid spans are dropped and measured, and paraphrased
+duplicates above the semantic threshold are merged. These guards address
+hallucinated and duplicated items, but they cannot detect an omitted requirement
+or prove that a valid source span was classified correctly. Embedding-based
+deduplication can also merge distinct but unusually similar requirements; the
+0.9 threshold has not been calibrated on representative job descriptions.
 
 ### A retrieval miss can become a rejection
 
@@ -112,6 +143,10 @@ current evaluation does not measure how often this happens.
 
 The `LOW_RETRIEVAL_FLOOR` is based on reciprocal-rank-fusion agreement. It does
 not directly measure whether the retrieved chunks are semantically relevant.
+Planner-provided lexical aliases now reduce abbreviation misses in BM25, but
+their correctness still depends on planner output. Terms are capped at five and
+restricted by prompt to alternate names; an overly broad alias can still create
+a misleading lexical hit.
 
 ### Routing thresholds are not calibrated
 
@@ -140,6 +175,13 @@ A dense skills list can outrank experience evidence because it contains more
 matching terms. The reranker is prompted to prefer demonstrated capability, but
 the baseline is too small to quantify how often it succeeds.
 
+Docling contextualization also prepends headings to every chunk. Under a common
+heading such as "Experience", generic queries like "years of experience" give
+many chunks the same BM25 term contribution. This is material for requirements
+whose lexical query is mostly generic wording; requirement-specific terms and
+the independent vector arm usually provide differentiation, but the effect has
+not been quantified and is intentionally not changed with query expansion.
+
 ### Short resumes
 
 Resumes with fewer than three or four distinct entries provide little retrieval
@@ -160,14 +202,33 @@ scan quality, language, fonts, and the available OCR runtime. The first
 conversion in a fresh environment may also be slow while Docling initializes
 its document models.
 
+Negligible and symbol-heavy OCR output is now detected before retrieval and
+scoring, and the synthetic poor-scan case routes to human review rather than a
+qualification-based rejection. The content guard does not measure linguistic
+coherence: sufficiently long alphabetic OCR gibberish can still pass. Its
+100-character and 0.5 alphabetic-ratio defaults are deliberate heuristics, not
+thresholds calibrated on representative scans.
+
+### Eligibility constraints require human confirmation
+
+Location, schedule, travel, relocation, and work-authorization constraints are
+now separated from scored qualifications. The synthetic work-authorization
+case confirms that resume silence escalates without lowering match score, while
+the unqualified-plus-unresolved-gate case confirms that a scored rejection is
+not suppressed. An explicit violation also escalates by default; deployments
+can opt into rejection as a policy choice. The system still relies on the
+planner to classify these constraints as gates, and it cannot verify a
+candidate's statement independently.
+
 ## Open Work
 
 - [ ] Expand evaluation to representative anonymized or consented resumes.
 - [ ] Calibrate confidence against representative human-reviewed outcomes.
 - [ ] Report verdict accuracy and escalation precision at each confidence floor.
 - [ ] Calibrate required, partial-match, and confidence thresholds jointly.
-- [ ] Measure rejected reflection corrections and their rejection reasons.
+- [ ] Measure rejected reflection correction reasons over representative runs.
 - [ ] Measure retrieval-caused rejection separately from genuine qualification gaps.
-- [ ] Add two-column, table-based, short, malformed, and image-only PDF cases.
+- [ ] Add two-column, table-based, short, malformed, and image-only PDF cases
+      beyond the current deterministic poor-extraction fixture.
 - [ ] Measure provider variance, latency, token usage, and cost per report.
 - [ ] Evaluate fairness and disparate error rates before any hiring use.

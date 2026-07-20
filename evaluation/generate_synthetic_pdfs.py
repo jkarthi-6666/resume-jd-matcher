@@ -6,39 +6,75 @@ import json
 import pathlib
 import textwrap
 
-import fitz
-
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
 def render_pdf(text: str, output_path: pathlib.Path) -> None:
+    """Write a deterministic, text-only PDF using only the standard library."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    document = fitz.open()
-    page = document.new_page(width=612, height=792)
-    y = 54.0
-
+    rendered_lines: list[str] = []
     for raw_line in text.splitlines():
         lines = textwrap.wrap(raw_line, width=88) or [""]
-        for line in lines:
-            if y > 738:
-                page = document.new_page(width=612, height=792)
-                y = 54.0
-            page.insert_text((54, y), line, fontsize=10, fontname="helv")
-            y += 14
+        rendered_lines.extend(lines)
         if not raw_line:
-            y += 4
+            rendered_lines.append("")
 
-    metadata = document.metadata
-    metadata.update(
-        {
-            "title": output_path.stem,
-            "author": "Synthetic evaluation fixture",
-            "subject": "Resume matcher evaluation",
-        }
+    pages = [rendered_lines[i:i + 48] for i in range(0, len(rendered_lines), 48)] or [[]]
+    font_id = 3 + 2 * len(pages)
+    objects: list[bytes] = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        (
+            f"<< /Type /Pages /Count {len(pages)} /Kids "
+            f"[{' '.join(f'{3 + 2 * i} 0 R' for i in range(len(pages)))}] >>"
+        ).encode("ascii"),
+    ]
+    for index, lines in enumerate(pages):
+        page_id = 3 + 2 * index
+        content_id = page_id + 1
+        objects.append(
+            (
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                f"/Resources << /Font << /F1 {font_id} 0 R >> >> "
+                f"/Contents {content_id} 0 R >>"
+            ).encode("ascii")
+        )
+        commands = ["BT", "/F1 10 Tf", "54 738 Td", "14 TL"]
+        for line in lines:
+            safe = (
+                line.encode("ascii", "replace").decode("ascii")
+                .replace("\\", "\\\\")
+                .replace("(", "\\(")
+                .replace(")", "\\)")
+            )
+            commands.extend((f"({safe}) Tj", "T*"))
+        commands.append("ET")
+        stream = "\n".join(commands).encode("ascii")
+        objects.append(
+            f"<< /Length {len(stream)} >>\nstream\n".encode("ascii")
+            + stream
+            + b"\nendstream"
+        )
+    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+
+    payload = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for object_id, body in enumerate(objects, start=1):
+        offsets.append(len(payload))
+        payload.extend(f"{object_id} 0 obj\n".encode("ascii"))
+        payload.extend(body)
+        payload.extend(b"\nendobj\n")
+    xref_offset = len(payload)
+    payload.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    payload.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        payload.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+    payload.extend(
+        (
+            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+            f"startxref\n{xref_offset}\n%%EOF\n"
+        ).encode("ascii")
     )
-    document.set_metadata(metadata)
-    document.save(output_path, garbage=4, deflate=True)
-    document.close()
+    output_path.write_bytes(payload)
 
 
 def generate(cases_path: pathlib.Path) -> int:

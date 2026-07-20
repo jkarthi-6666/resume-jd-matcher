@@ -21,11 +21,17 @@ def _make_chunk(text: str, chunk_id: str = "chunk_001") -> Chunk:
     )
 
 
-def _make_analysis(evidence: list[str], score: float = 1.0, confidence: float = 0.9) -> RequirementAnalysis:
+def _make_analysis(
+    evidence: list[str],
+    score: float = 1.0,
+    confidence: float = 0.9,
+    kind: str = "scored",
+) -> RequirementAnalysis:
     return RequirementAnalysis(
         requirement_id="R1",
         requirement="Python experience",
         importance="required",
+        kind=kind,
         score=score,
         confidence=confidence,
         evidence=evidence,
@@ -161,6 +167,16 @@ class TestDeriveStatus:
 
 
 class TestCalibrateConfidence:
+    def test_does_not_lift_confidence_for_silent_gate(self):
+        a = _make_analysis([], score=0.0, confidence=0.1, kind="gate")
+        a.evidence_valid = True
+
+        result = calibrate_confidence(a, full_resume_audit_completed=True)
+
+        assert result.confidence == 0.1
+        assert result.gate_status == "unknown"
+        assert result.status == "uncertain"
+
     def test_lifts_verified_match_after_full_resume_audit(self):
         a = _make_analysis(["evidence"], score=1.0, confidence=0.1)
         a.evidence_valid = True
