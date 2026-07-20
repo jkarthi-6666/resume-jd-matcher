@@ -13,7 +13,6 @@ st.set_page_config(
 try:
     from src.config import validate_config
     from src import pipeline
-    from src.parser import ImageOnlyPDF
     CONFIG_OK = True
     try:
         validate_config()
@@ -545,7 +544,7 @@ if run_naive_btn and inputs_ready:
         try:
             st.session_state["naive_result"] = pipeline.run_naive(pdf_bytes, job_description)
             st.session_state["naive_error"] = None
-        except (ImageOnlyPDF, ValueError) as e:
+        except ValueError as e:
             st.session_state["naive_result"] = None
             st.session_state["naive_error"] = str(e)
         st.session_state["naive_input_sig"] = current_sig
@@ -561,7 +560,7 @@ if run_full_btn and inputs_ready:
         report, debug = pipeline.run_full(pdf_bytes, job_description, progress_cb=_on_progress)
         st.session_state["full_result"] = (report, debug)
         st.session_state["full_error"] = None
-    except (ImageOnlyPDF, ValueError) as e:
+    except ValueError as e:
         st.session_state["full_result"] = None
         st.session_state["full_error"] = str(e)
     finally:

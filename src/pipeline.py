@@ -5,7 +5,7 @@ from src.schemas import (
     Chunk, Requirement, RequirementAnalysis,
     FinalReport, NaiveResult, ReflectionResult,
 )
-from src import parser, chunker, planner, retriever as ret_mod, reranker, scorer
+from src import docling_processor, planner, retriever as ret_mod, reranker, scorer
 from src import validate as val, calculator, reflector, router, config, llm
 
 
@@ -25,7 +25,7 @@ def run_naive(pdf_bytes: bytes, job_description: str) -> NaiveResult:
     """Phase 1 baseline — single LLM call, no RAG."""
     if not job_description.strip():
         raise ValueError("Job description is empty.")
-    resume_text = parser.extract_text(pdf_bytes)
+    resume_text, _ = docling_processor.extract_and_chunk_resume(pdf_bytes)
     prompt = (
         f"You are a recruiter. Compare the resume and job description below.\n\n"
         f"Resume:\n{resume_text}\n\n"
@@ -56,29 +56,25 @@ def run_full(
     if not job_description.strip():
         raise ValueError("Job description is empty.")
 
-    n_stages = 7  # extract, chunk, index, plan, score-requirements, reflect, route
+    n_stages = 6  # process PDF, index, plan, score requirements, reflect, route
 
-    # --- 1. PDF extraction ---
-    _tick("Extracting resume text", 0, n_stages)
-    resume_text = parser.extract_text(pdf_bytes)
+    # --- 1. Docling conversion and structure-aware chunking ---
+    _tick("Extracting and chunking resume", 0, n_stages)
+    resume_text, chunks = docling_processor.extract_and_chunk_resume(pdf_bytes)
     debug.resume_text = resume_text
-
-    # --- 2. Chunking ---
-    _tick("Chunking resume", 1, n_stages)
-    chunks = chunker.chunk_resume(resume_text)
     debug.chunks = chunks
 
-    # --- 3. Build retriever ---
-    _tick("Building hybrid retriever index", 2, n_stages)
+    # --- 2. Build retriever ---
+    _tick("Building hybrid retriever index", 1, n_stages)
     hybrid = ret_mod.HybridRetriever()
     hybrid.build(chunks)
 
-    # --- 4. Requirement planning ---
-    _tick("Planning requirements from job description", 3, n_stages)
+    # --- 3. Requirement planning ---
+    _tick("Planning requirements from job description", 2, n_stages)
     requirements = planner.plan(job_description)
     debug.requirements = requirements
 
-    # --- 5. Per-requirement: retrieve → rerank → score → validate (parallel) ---
+    # --- 4. Per-requirement: retrieve → rerank → score → validate (parallel) ---
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     def _process_requirement(req: Requirement):
@@ -108,7 +104,7 @@ def run_full(
 
     # Run all requirements concurrently; collect in original order
     total_reqs = len(requirements)
-    _tick(f"Scoring requirements (0/{total_reqs})", 4, n_stages)
+    _tick(f"Scoring requirements (0/{total_reqs})", 3, n_stages)
     result_map: dict[str, tuple] = {}
     n_done = 0
     with ThreadPoolExecutor(max_workers=min(len(requirements), 8)) as pool:
@@ -117,7 +113,7 @@ def run_full(
             req_id, analysis, ret_dbg, ev_dbg = future.result()
             result_map[req_id] = (analysis, ret_dbg, ev_dbg)
             n_done += 1
-            _tick(f"Scoring requirements ({n_done}/{total_reqs})", 4, n_stages)
+            _tick(f"Scoring requirements ({n_done}/{total_reqs})", 3, n_stages)
 
     analyses: list[RequirementAnalysis] = []
     for req in requirements:
@@ -130,7 +126,7 @@ def run_full(
     score_pre = calculator.weighted_score(analyses)
 
     # --- 7. Adversarial reflection ---
-    _tick("Running adversarial reflection", 5, n_stages)
+    _tick("Running adversarial reflection", 4, n_stages)
     corrected_analyses, reflection_result = reflector.reflect(
         analyses, resume_text
     )
@@ -149,7 +145,7 @@ def run_full(
     delta = round(score_post - score_pre, 1)
 
     # --- 9. Confidence routing ---
-    _tick("Routing verdict and generating recommendation", 6, n_stages)
+    _tick("Routing verdict and generating recommendation", 5, n_stages)
     verdict, review_reason = router.route(corrected_analyses)
 
     # --- 10. Recommendation ---

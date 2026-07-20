@@ -15,12 +15,13 @@ An agentic resume analysis system with hybrid RAG, evidence validation, adversar
 
 ## What it does
 
-1. **Plans** — extracts discrete requirements from the job description
-2. **Retrieves** — finds the most relevant resume sections per requirement (BM25 + FAISS + RRF + rerank)
-3. **Scores** — evaluates each requirement against verbatim evidence
-4. **Validates** — checks every evidence quote is a real substring of the resume
-5. **Reflects** — adversarial critic corrects both inflated and missed scores, and every correction must pass the same evidence check
-6. **Routes** — accept / needs_review / reject with a stated reason. One missing required qualification rejects; anything the system could not assess escalates rather than rejects
+1. **Processes** — uses Docling layout analysis, OCR, and hybrid chunking to preserve resume structure
+2. **Plans** — extracts discrete requirements from the job description
+3. **Retrieves** — finds the most relevant resume sections per requirement (BM25 + cosine similarity + RRF + rerank)
+4. **Scores** — evaluates each requirement against verbatim evidence
+5. **Validates** — checks every evidence quote is a real substring of the resume
+6. **Reflects** — adversarial critic corrects both inflated and missed scores, and every correction must pass the same evidence check
+7. **Routes** — accept / needs_review / reject with a stated reason. One missing required qualification rejects; anything the system could not assess escalates rather than rejects
 
 ## Setup
 
@@ -36,6 +37,10 @@ cp .env.example .env
 # Edit .env — add NVIDIA_API_KEY (get one at build.nvidia.com)
 ```
 
+Docling downloads its local document-layout and OCR model artifacts on the
+first PDF conversion. Pre-warm that cache when building a production image so
+the first user request does not pay the model initialization cost.
+
 ## Run
 
 ```bash
@@ -50,7 +55,7 @@ Upload a PDF resume, paste a job description, click Analyse.
 pytest tests/ -v
 ```
 
-97 tests, no API key or network required — every model and embedding call is
+The test suite needs no API key or network — every model and embedding call is
 mocked at the provider-agnostic seam (`src.llm.call`, `src.embeddings.get_embeddings`).
 `tests/conftest.py` installs an autouse guard that fails any test which reaches
 a real provider, so a mock patched at the wrong layer surfaces immediately
@@ -108,10 +113,11 @@ startup. Anthropic has no embedding endpoint, so `EMBED_PROVIDER` falls back to
 ```
 src/
   schemas.py       Pydantic models (Literal types throughout)
-  parser.py        PDF → text
-  chunker.py       Entry-based resume chunking
-  embeddings.py    FAISS index
-  retriever.py     BM25 + FAISS + RRF
+  docling_processor.py  PDF → Docling document → structure-aware chunks
+  parser.py        Legacy PyMuPDF extractor (not on the active pipeline path)
+  chunker.py       Legacy regex chunker (not on the active pipeline path)
+  embeddings.py    In-memory cosine-similarity vector index
+  retriever.py     BM25 + cosine vector retrieval + RRF
   reranker.py      LLM rerank
   planner.py       JD → requirements (cached)
   scorer.py        Per-requirement scoring

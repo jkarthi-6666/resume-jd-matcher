@@ -1,4 +1,4 @@
-"""Hybrid BM25 + FAISS retrieval with reciprocal rank fusion."""
+"""Hybrid BM25 + cosine retrieval with reciprocal rank fusion."""
 from rank_bm25 import BM25Okapi
 from src.schemas import Chunk
 from src.embeddings import VectorIndex
