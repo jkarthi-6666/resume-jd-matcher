@@ -41,6 +41,30 @@ def test_planner_preserves_requirement_strength():
     assert 'Do not rewrite "experience with" as "proficiency"' in prompt
 
 
+def test_planner_allows_unknown_category_as_a_last_resort():
+    prompt = (PROMPTS / "planner.txt").read_text()
+
+    assert "responsibility, unknown" in prompt
+    assert "Use unknown only when" in prompt
+    assert "none of the other categories applies" in prompt
+
+
+def test_planner_separates_qualifications_from_recruitment_logistics():
+    prompt = (PROMPTS / "planner.txt").read_text()
+
+    assert "notice period" in prompt
+    assert "interview or walk-in" in prompt
+    assert "Do not turn these into\n   candidate requirements" in prompt
+
+
+def test_planner_preserves_alternatives_and_parenthetical_examples():
+    prompt = (PROMPTS / "planner.txt").read_text()
+
+    assert "Preserve AND/OR" in prompt
+    assert "parenthetical examples" in prompt
+    assert "not three separately mandatory products" in prompt
+
+
 def test_reflector_does_not_invent_advanced_depth_requirements():
     prompt = (PROMPTS / "reflection.txt").read_text()
 
