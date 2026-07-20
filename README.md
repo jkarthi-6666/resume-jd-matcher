@@ -1,5 +1,7 @@
 # Resume → Job Description Matcher
 
+[![CI](https://github.com/jkarthi-6666/resume-jd-matcher/actions/workflows/ci.yml/badge.svg)](https://github.com/jkarthi-6666/resume-jd-matcher/actions/workflows/ci.yml)
+
 An agentic resume analysis system with hybrid RAG, evidence validation, adversarial reflection, and confidence routing.
 
 
@@ -52,6 +54,8 @@ Upload a PDF resume, paste a job description, click Analyse.
 ## Tests
 
 ```bash
+pip install -r requirements-dev.txt
+ruff check .
 pytest tests/ -v
 ```
 

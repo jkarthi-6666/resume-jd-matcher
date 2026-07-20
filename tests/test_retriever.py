@@ -10,7 +10,7 @@ def _make_chunk(chunk_id: str, text: str, section: str = "Experience") -> Chunk:
     return Chunk(
         chunk_id=chunk_id,
         section=section,
-        header=f"Role at Company 2020-2023",
+        header="Role at Company 2020-2023",
         body=text,
         embed_text=text,
         source="test.pdf",
