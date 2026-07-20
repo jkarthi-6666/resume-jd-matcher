@@ -154,13 +154,15 @@ def plan(job_description: str, model: str | None = None) -> RequirementPlan:
     )
 
     for attempt in range(2):
+        call_kwargs = {"temperature": 0.0}
+        if attempt:
+            call_kwargs["system"] = strict_system
         try:
             result: RequirementPlan = llm.call(
                 prompt,
                 model,
                 RequirementPlan,
-                temperature=0.0,
-                system=strict_system if attempt else "",
+                **call_kwargs,
             )
         except ValueError:
             # JSON-mode providers do not all enforce the supplied schema. Retry
@@ -180,10 +182,11 @@ def plan(job_description: str, model: str | None = None) -> RequirementPlan:
             _CACHE[jd_hash] = plan_result
             return plan_result
 
-        all_failed_source_validation = (
-            bool(result.requirements) and dropped == len(result.requirements)
+        retryable_empty_plan = (
+            not result.requirements
+            or dropped == len(result.requirements)
         )
-        if attempt == 0 and all_failed_source_validation:
+        if attempt == 0 and retryable_empty_plan:
             continue
         break
 

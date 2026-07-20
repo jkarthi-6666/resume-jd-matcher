@@ -79,6 +79,7 @@ def test_plan_retries_one_schema_failure():
 
     assert requirements[0].requirement == "Python programming"
     assert mock_call.call_count == 2
+    assert "system" not in mock_call.call_args_list[0].kwargs
     assert "strict job-requirement extraction engine" in mock_call.call_args.kwargs["system"]
 
 
@@ -105,7 +106,32 @@ def test_plan_retries_when_every_requirement_omits_source_span():
 
     assert [r.requirement for r in result.requirements] == ["Python programming"]
     assert mock_call.call_count == 2
+    assert "system" not in mock_call.call_args_list[0].kwargs
     assert "non-empty verbatim source_span" in mock_call.call_args.kwargs["system"]
+
+
+def test_plan_retries_when_first_attempt_returns_no_requirements():
+    empty = RequirementPlan(requirements=[])
+    grounded = RequirementPlan(requirements=[
+        Requirement(
+            id="R1", requirement="Python programming",
+            category="technical_skill", importance="required",
+            source_span="Python programming",
+        )
+    ])
+    clear_cache()
+
+    with patch(
+        "src.planner.llm.call", side_effect=[empty, grounded]
+    ) as mock_call:
+        result = plan("Python programming is required")
+
+    assert [r.requirement for r in result.requirements] == ["Python programming"]
+    assert mock_call.call_count == 2
+    assert "system" not in mock_call.call_args_list[0].kwargs
+    assert "strict job-requirement extraction engine" in (
+        mock_call.call_args_list[1].kwargs["system"]
+    )
 
 
 def test_plan_drops_only_requirements_with_invalid_source_spans():
