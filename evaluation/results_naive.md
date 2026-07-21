@@ -1,24 +1,14 @@
-# Evaluation Results — full mode
+# Evaluation Results — naive mode
 
 ## Metrics
 
 | Metric | Value |
 |---|---:|
 | Total Cases | 8 |
-| Completed Cases | 8 |
+| Completed Cases | 7 |
 | Skipped Cases | 0 |
-| Failed Cases | 0 |
-| Score Mae | 4.37 |
-| Verdict Accuracy | 0.875 |
-| Escalation Rate | 0.375 |
-| False Accept Count | 0 |
-| False Reject Count | 1 |
-| Hallucinated Quote Rate | 0.0 |
-| Unsupported Match Rate | 0.0 |
-| Raised Correction Count | 0 |
-| Lowered Correction Count | 1 |
-| Planner Hallucination Rate | 0.0 |
-| Rejected Correction Reason Counts | {} |
+| Failed Cases | 1 |
+| Score Mae | 10.39 |
 
 ## Cases
 
@@ -28,5 +18,5 @@
 - **case_004**: Buried evidence - proof in projects — completed
 - **case_005**: Education-only evidence — completed
 - **case_006**: Silent work-authorization eligibility gate — completed
-- **case_007**: Negligible non-linguistic extraction — completed
+- **case_007**: Negligible non-linguistic extraction — failed — We could not read enough reliable text from this resume to assess qualifications. The PDF may be a poor-quality scan or contain non-linguistic OCR output; human review is required.
 - **case_008**: Missing scored qualification despite unresolved eligibility gate — completed

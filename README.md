@@ -87,6 +87,30 @@ python evaluation/run_evaluation.py --mode full --case-id case_001 \
 Omit `--case-id` to run all cases. The evaluator saves complete machine-readable
 reports and a Markdown metrics summary while isolating failures per case.
 
+Run both modes — the naive baseline is what gives the full pipeline's numbers
+something to be compared against:
+
+```bash
+python evaluation/run_evaluation.py --mode full
+python evaluation/run_evaluation.py --mode naive \
+  --output evaluation/results_naive.json \
+  --summary evaluation/results_naive.md
+```
+
+Committed results, all eight cases, July 21 2026:
+
+| | Full pipeline | Naive baseline |
+|---|---:|---:|
+| Completed | 8/8 | 7/8 |
+| Verdict accuracy | 7/8 | emits no verdict |
+| Score mean absolute error | 4.37 | 10.39 |
+
+These are regression results on a small curated synthetic set, not a measure of
+real-world accuracy. One case (`case_005`) returns different verdicts across
+identical runs, so verdict accuracy on this set is not a stable number. See
+[FAILURES.md](FAILURES.md) for the measured failures and what remains
+unmeasured.
+
 ## Configuration
 
 All model and threshold settings are in `.env`. See `.env.example` for the full list.
