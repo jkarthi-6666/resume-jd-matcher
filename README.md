@@ -104,7 +104,7 @@ makes no model calls):
 python evaluation/sweep_threshold.py evaluation/results.json
 ```
 
-Committed results, all eight cases, July 21 2026:
+Committed results, all eight cases:
 
 | | Full pipeline | Naive baseline |
 |---|---:|---:|
