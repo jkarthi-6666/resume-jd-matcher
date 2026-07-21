@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-21T06:07:18.200537+00:00",
+  "mode": "full",
+  "metrics": {
+    "total_cases": 1,
+    "completed_cases": 1,
+    "skipped_cases": 0,
+    "failed_cases": 0,
+    "score_mae": 0.0,
+    "verdict_accuracy": 1.0,
+    "escalation_rate": 1.0,
+    "false_accept_count": 0,
+    "false_reject_count": 0,
+    "hallucinated_quote_rate": 0.0,
+    "unsupported_match_rate": 0.0,
+    "raised_correction_count": 0,
+    "lowered_correction_count": 0,
+    "planner_hallucination_rate": 0.0,
+    "rejected_correction_reason_counts": {}
+  },
+  "cases": [
+    {
+      "case_id": "case_005",
+      "description": "Education-only evidence",
+      "expected_verdict": "needs_review",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "At least two years of professional Python development",
+          "importance": "required",
+          "ground_truth_score": 0.25,
+          "ground_truth_evidence_exists": true,
+          "notes": "Python evidence is academic and does not establish professional experience."
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "verdict": "needs_review",
+        "review_reason": "Required qualification is only partially supported: At least two years of professional Python software development experience.",
+        "match_score": 25.0,
+        "score_pre_reflection": 25.0,
+        "score_post_reflection": 25.0,
+        "reflection_delta": 0.0,
+        "all_requirements": [
+          {
+            "requirement_id": "R1",
+            "requirement": "At least two years of professional Python software development experience",
+            "importance": "required",
+            "kind": "scored",
+            "score": 0.25,
+            "confidence": 0.9,
+            "evidence": [
+              "Used Python for weekly assignments and laboratory exercises in two university courses.",
+              "Built a Python command-line program that reads course data and detects timetable conflicts."
+            ],
+            "reason": "The resume shows Python usage in academic assignments and a personal project, which is relevant but does not demonstrate professional employment experience. Therefore the evidence is weak for a professional experience requirement.",
+            "retrieved_chunk_ids": [
+              "chunk_000"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "partially_matched",
+            "gate_status": null
+          }
+        ],
+        "corrections": [],
+        "recommendation": "Overall match: 25/100. Recommend human review before decision.",
+        "reflection_notes": [
+          "No strong argument to adjust the score; the resume provides evidence of Python usage in coursework and a project, which is relevant but does not demonstrate the required professional experience. According to the guidelines, we should not lower the 0.25 score to 0.0 because there is real keyword evidence present."
+        ]
+      },
+      "diagnostics": {
+        "evidence_quote_count": 2,
+        "invalid_evidence_quote_count": 0,
+        "positive_requirement_count": 1,
+        "unsupported_positive_count": 0,
+        "raised_correction_count": 0,
+        "lowered_correction_count": 0,
+        "rejected_correction_reasons": [],
+        "planner_dropped_requirement_count": 0,
+        "planner_output_requirement_count": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-21T06:03:44.784113+00:00",
+  "mode": "naive",
+  "metrics": {
+    "total_cases": 8,
+    "completed_cases": 7,
+    "skipped_cases": 0,
+    "failed_cases": 1,
+    "score_mae": 10.39
+  },
+  "cases": [
+    {
+      "case_id": "case_001",
+      "description": "Strong match - senior backend engineer",
+      "expected_verdict": "accept",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Python experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R2",
+          "requirement": "REST API experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R3",
+          "requirement": "PostgreSQL experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R4",
+          "requirement": "Docker experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R5",
+          "requirement": "Kubernetes experience",
+          "importance": "preferred",
+          "ground_truth_score": 0.5,
+          "ground_truth_evidence_exists": true
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "match_score": 95,
+        "matched_skills": [
+          "Python",
+          "REST API",
+          "PostgreSQL",
+          "Docker",
+          "Kubernetes"
+        ],
+        "missing_skills": [],
+        "recommendation": "Strong fit for the role; recommend moving forward to technical interview."
+      }
+    },
+    {
+      "case_id": "case_002",
+      "description": "Missing required cloud skill",
+      "expected_verdict": "reject",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Python experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R2",
+          "requirement": "REST API experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R3",
+          "requirement": "AWS experience",
+          "importance": "required",
+          "ground_truth_score": 0.0,
+          "ground_truth_evidence_exists": false
+        },
+        {
+          "id": "R4",
+          "requirement": "Kubernetes experience",
+          "importance": "preferred",
+          "ground_truth_score": 0.0,
+          "ground_truth_evidence_exists": false
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "match_score": 55,
+        "matched_skills": [
+          "Python",
+          "REST"
+        ],
+        "missing_skills": [
+          "AWS",
+          "Kubernetes"
+        ],
+        "recommendation": "The candidate demonstrates solid Python and REST API experience, which aligns with the core requirements. However, they lack hands\u2011on AWS and Kubernetes experience, which are essential and preferred respectively. Consider the candidate if you can provide AWS/Kubernetes training or if those skills are not immediately critical; otherwise, look for candidates with proven cloud and container orchestration experience."
+      }
+    },
+    {
+      "case_id": "case_003",
+      "description": "Keyword only - no demonstrated use",
+      "expected_verdict": "needs_review",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Hands-on production Kubernetes experience",
+          "importance": "required",
+          "ground_truth_score": 0.25,
+          "ground_truth_evidence_exists": true,
+          "notes": "The keyword is listed, but no deployment or operational use is demonstrated."
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "match_score": 60,
+        "matched_skills": [
+          "Kubernetes"
+        ],
+        "missing_skills": [
+          "Hands-on production Kubernetes experience (deploying/operating workloads)"
+        ],
+        "recommendation": "Candidate shows familiarity with Kubernetes, but lacks explicit production deployment experience. Recommend proceeding to interview to assess depth of Kubernetes operational skills."
+      }
+    },
+    {
+      "case_id": "case_004",
+      "description": "Buried evidence - proof in projects",
+      "expected_verdict": "accept",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Python development",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R2",
+          "requirement": "Kubernetes experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R3",
+          "requirement": "Production ML systems experience",
+          "importance": "required",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "match_score": 95,
+        "matched_skills": [
+          "Python development",
+          "Kubernetes",
+          "Production machine learning system operation"
+        ],
+        "missing_skills": [],
+        "recommendation": "The candidate closely matches all required qualifications, demonstrating strong Python expertise, hands\u2011on Kubernetes experience, and a proven track record of building and operating production ML systems. Recommend moving forward with this candidate."
+      }
+    },
+    {
+      "case_id": "case_005",
+      "description": "Education-only evidence",
+      "expected_verdict": "needs_review",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "At least two years of professional Python development",
+          "importance": "required",
+          "ground_truth_score": 0.25,
+          "ground_truth_evidence_exists": true,
+          "notes": "Python evidence is academic and does not establish professional experience."
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "match_score": 30,
+        "matched_skills": [
+          "Python"
+        ],
+        "missing_skills": [
+          "2+ years professional Python development experience"
+        ],
+        "recommendation": "The candidate has solid Python knowledge and academic project experience, but lacks the required professional experience. Recommend considering for an internship or junior role, or suggest gaining relevant work experience before applying for this position."
+      }
+    },
+    {
+      "case_id": "case_006",
+      "description": "Silent work-authorization eligibility gate",
+      "expected_verdict": "needs_review",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Python backend development experience",
+          "importance": "required",
+          "kind": "scored",
+          "ground_truth_score": 1.0,
+          "ground_truth_evidence_exists": true
+        },
+        {
+          "id": "R2",
+          "requirement": "Must be authorized to work in the US without sponsorship",
+          "importance": "required",
+          "kind": "gate",
+          "ground_truth_score": 0.0,
+          "ground_truth_evidence_exists": false,
+          "notes": "Resume silence makes this gate unknown; it must not lower match score or reject."
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "match_score": 80,
+        "matched_skills": [
+          "Python",
+          "Backend development",
+          "REST APIs"
+        ],
+        "missing_skills": [
+          "Authorized to work in the US without sponsorship"
+        ],
+        "recommendation": "The candidate has strong Python backend experience and relevant technical skills, making them a good fit for the role. However, the resume does not confirm US work authorization, which is a mandatory requirement. Verify the candidate's eligibility before proceeding."
+      }
+    },
+    {
+      "case_id": "case_007",
+      "description": "Negligible non-linguistic extraction",
+      "expected_verdict": "needs_review",
+      "requirements": [],
+      "status": "failed",
+      "error_type": "UnassessableDocumentError",
+      "error": "We could not read enough reliable text from this resume to assess qualifications. The PDF may be a poor-quality scan or contain non-linguistic OCR output; human review is required."
+    },
+    {
+      "case_id": "case_008",
+      "description": "Missing scored qualification despite unresolved eligibility gate",
+      "expected_verdict": "reject",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "Hands-on AWS cloud experience",
+          "importance": "required",
+          "kind": "scored",
+          "ground_truth_score": 0.0,
+          "ground_truth_evidence_exists": false
+        },
+        {
+          "id": "R2",
+          "requirement": "Must be authorized to work in the US without sponsorship",
+          "importance": "required",
+          "kind": "gate",
+          "ground_truth_score": 0.0,
+          "ground_truth_evidence_exists": false,
+          "notes": "The unresolved gate blocks accept but must not override the confident scored rejection."
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "match_score": 5,
+        "matched_skills": [],
+        "missing_skills": [
+          "Hands-on AWS cloud experience",
+          "US work authorization without sponsorship"
+        ],
+        "recommendation": "The candidate lacks the required AWS cloud experience and does not indicate US work authorization, making them a poor fit for this role."
+      }
+    }
+  ]
+}

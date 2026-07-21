@@ -17,6 +17,7 @@ CorrectionRejectionReason = Literal[
     "unknown_requirement", "invalid_score_bounds", "stale_old_score",
     "missing_reason", "unchanged_score", "direction_mismatch",
     "missing_new_evidence", "evidence_substring_miss",
+    "unevidenced_missing_downgrade",
 ]
 
 

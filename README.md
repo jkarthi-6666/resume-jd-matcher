@@ -87,6 +87,42 @@ python evaluation/run_evaluation.py --mode full --case-id case_001 \
 Omit `--case-id` to run all cases. The evaluator saves complete machine-readable
 reports and a Markdown metrics summary while isolating failures per case.
 
+Run both modes — the naive baseline is what gives the full pipeline's numbers
+something to be compared against:
+
+```bash
+python evaluation/run_evaluation.py --mode full
+python evaluation/run_evaluation.py --mode naive \
+  --output evaluation/results_naive.json \
+  --summary evaluation/results_naive.md
+```
+
+Inspect the accuracy cost of each confidence floor (offline — reads saved JSON,
+makes no model calls):
+
+```bash
+python evaluation/sweep_threshold.py evaluation/results.json
+```
+
+Committed results, all eight cases:
+
+| | Full pipeline | Naive baseline |
+|---|---:|---:|
+| Completed | 8/8 | 7/8 |
+| Verdict accuracy | 8/8 | emits no verdict |
+| Score mean absolute error | 0.8 | 10.39 |
+
+The full-pipeline column comes from post-fix code, after a reflector guard was
+added; the naive column predates it and was not re-run because `run_naive()`
+never invokes the reflector.
+
+**These are regression results on eight curated synthetic cases, not a measure
+of real-world accuracy.** Eight cases built to exercise known routing paths
+cannot establish a rate — one case moving swings the figure by 12.5 points, and
+the provider is known to return different verdicts across identical runs. See
+[FAILURES.md](FAILURES.md) for the measured failures and what remains
+unmeasured.
+
 ## Configuration
 
 All model and threshold settings are in `.env`. See `.env.example` for the full list.

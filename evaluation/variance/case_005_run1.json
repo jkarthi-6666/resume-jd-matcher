@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-21T06:06:30.185110+00:00",
+  "mode": "full",
+  "metrics": {
+    "total_cases": 1,
+    "completed_cases": 1,
+    "skipped_cases": 0,
+    "failed_cases": 0,
+    "score_mae": 25.0,
+    "verdict_accuracy": 0.0,
+    "escalation_rate": 0.0,
+    "false_accept_count": 0,
+    "false_reject_count": 1,
+    "hallucinated_quote_rate": 0.0,
+    "unsupported_match_rate": 0.0,
+    "raised_correction_count": 0,
+    "lowered_correction_count": 1,
+    "planner_hallucination_rate": 0.0,
+    "rejected_correction_reason_counts": {}
+  },
+  "cases": [
+    {
+      "case_id": "case_005",
+      "description": "Education-only evidence",
+      "expected_verdict": "needs_review",
+      "requirements": [
+        {
+          "id": "R1",
+          "requirement": "At least two years of professional Python development",
+          "importance": "required",
+          "ground_truth_score": 0.25,
+          "ground_truth_evidence_exists": true,
+          "notes": "Python evidence is academic and does not establish professional experience."
+        }
+      ],
+      "status": "completed",
+      "report": {
+        "verdict": "reject",
+        "review_reason": "Missing required qualification: At least two years of professional Python software development experience.",
+        "match_score": 0.0,
+        "score_pre_reflection": 25.0,
+        "score_post_reflection": 0.0,
+        "reflection_delta": -25.0,
+        "all_requirements": [
+          {
+            "requirement_id": "R1",
+            "requirement": "At least two years of professional Python software development experience",
+            "importance": "required",
+            "kind": "scored",
+            "score": 0.0,
+            "confidence": 0.9,
+            "evidence": [],
+            "reason": "The resume only shows academic use of Python in coursework and a class project, which is considered weak evidence for a professional experience requirement.",
+            "retrieved_chunk_ids": [
+              "chunk_000"
+            ],
+            "low_retrieval_confidence": false,
+            "evidence_valid": true,
+            "status": "missing",
+            "gate_status": null
+          }
+        ],
+        "corrections": [
+          {
+            "requirement_id": "R1",
+            "old_score": 0.25,
+            "new_score": 0.0,
+            "direction": "lowered",
+            "reason": "The evidence cited is academic (course assignments and a class project) and does not demonstrate professional Python development experience, which the requirement explicitly demands.",
+            "new_evidence": []
+          }
+        ],
+        "recommendation": "Overall match: 0/100. Missing required: At least two years of professional Python software development experience. Does not meet required qualifications.",
+        "reflection_notes": [
+          "R1 score reduced from 0.25 to 0.0 because the only evidence provided pertains to coursework and a student project, not professional work. The requirement specifies professional experience, so the prior score was too high."
+        ]
+      },
+      "diagnostics": {
+        "evidence_quote_count": 0,
+        "invalid_evidence_quote_count": 0,
+        "positive_requirement_count": 0,
+        "unsupported_positive_count": 0,
+        "raised_correction_count": 0,
+        "lowered_correction_count": 1,
+        "rejected_correction_reasons": [],
+        "planner_dropped_requirement_count": 0,
+        "planner_output_requirement_count": 1
+      }
+    }
+  ]
+}

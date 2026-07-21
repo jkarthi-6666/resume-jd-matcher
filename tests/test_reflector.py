@@ -81,14 +81,40 @@ class TestAcceptedCorrections:
         assert corrected[0].score == 0.25
         assert len(result.changed_requirements) == 1
 
-    def test_lowering_to_zero_clears_evidence_and_marks_missing(self):
+    def test_evidenced_downgrade_to_missing_clears_evidence_and_marks_missing(self):
+        # Dropping below PARTIAL_MATCH_SCORE is allowed, but the critic has to
+        # quote the text it is disputing. Once verified, a zeroed scored
+        # requirement claims nothing and carries no evidence forward.
         correction = _correction(
-            old_score=0.75, new_score=0.0, direction="lowered", new_evidence=[]
+            old_score=0.75,
+            new_score=0.0,
+            direction="lowered",
+            new_evidence=[REAL_QUOTE],
         )
-        corrected, _ = _reflect([correction], [_analysis(score=0.75)])
+        corrected, result = _reflect([correction], [_analysis(score=0.75)])
         assert corrected[0].score == 0.0
         assert corrected[0].evidence == []
         assert corrected[0].status == "missing"
+        assert result.changed_requirements == [correction]
+
+    def test_lowering_that_stays_above_the_missing_floor_needs_no_evidence(self):
+        # 0.75 -> 0.25 does not change the verdict, so it is left to the critic.
+        correction = _correction(
+            old_score=0.75, new_score=0.25, direction="lowered", new_evidence=[]
+        )
+        corrected, result = _reflect([correction], [_analysis(score=0.75)])
+        assert corrected[0].score == 0.25
+        assert result.changed_requirements == [correction]
+
+    def test_lowering_from_below_the_missing_floor_needs_no_evidence(self):
+        # Already missing by the router's reckoning, so 0.2 -> 0.0 cannot turn a
+        # review into a rejection and is not worth constraining.
+        correction = _correction(
+            old_score=0.2, new_score=0.0, direction="lowered", new_evidence=[]
+        )
+        corrected, result = _reflect([correction], [_analysis(score=0.2)])
+        assert corrected[0].score == 0.0
+        assert result.changed_requirements == [correction]
 
     def test_lowering_gate_to_violation_retains_verified_evidence(self):
         gate = _analysis(score=1.0).model_copy(update={"kind": "gate"})
@@ -176,6 +202,52 @@ class TestRejectedCorrections:
         corrected, result = _reflect([correction], [_analysis(score=0.75)])
         assert corrected[0].score == 0.75
         assert result.changed_requirements == []
+
+    def test_unevidenced_downgrade_to_missing_is_ignored(self):
+        # Without this guard the critic can zero any scored requirement with no
+        # evidence at all, and zeroing is what converts needs_review to reject.
+        correction = _correction(
+            old_score=0.75, new_score=0.0, direction="lowered", new_evidence=[]
+        )
+        corrected, result = _reflect([correction], [_analysis(score=0.75)])
+        assert corrected[0].score == 0.75
+        assert corrected[0].evidence == [REAL_QUOTE]
+        assert result.changed_requirements == []
+        assert result.rejected_corrections[0].reason == (
+            "unevidenced_missing_downgrade"
+        )
+
+    def test_weak_evidence_is_not_collapsed_to_absent_without_evidence(self):
+        # Regression guard for evaluation case_005: the scorer correctly rated
+        # education-only Python evidence 0.25, the critic dropped it to 0.0
+        # citing nothing, and the router then rejected a candidate the label
+        # says should reach human review.
+        correction = _correction(
+            old_score=0.25,
+            new_score=0.0,
+            direction="lowered",
+            new_evidence=[],
+            reason="Coursework is not professional experience.",
+        )
+        corrected, result = _reflect([correction], [_analysis(score=0.25)])
+        assert corrected[0].score == 0.25
+        assert result.changed_requirements == []
+        assert any("requires new evidence" in n for n in result.review_notes)
+
+    def test_downgrade_to_missing_with_fabricated_evidence_is_ignored(self):
+        # Evidence must be validated before a zeroed scored requirement has it
+        # cleared. Clearing first would let this correction through unchecked.
+        correction = _correction(
+            old_score=0.75,
+            new_score=0.0,
+            direction="lowered",
+            new_evidence=[FABRICATED_QUOTE],
+        )
+        corrected, result = _reflect([correction], [_analysis(score=0.75)])
+        assert corrected[0].score == 0.75
+        assert corrected[0].evidence == [REAL_QUOTE]
+        assert result.changed_requirements == []
+        assert result.rejected_corrections[0].reason == "evidence_substring_miss"
 
     def test_raised_correction_without_evidence_is_ignored(self):
         correction = _correction(new_evidence=[])
