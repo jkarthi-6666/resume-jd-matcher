@@ -109,14 +109,21 @@ def reflect(
         elif correction.direction == "raised" or original.kind == "gate":
             _ignore("missing_new_evidence", "this correction requires new evidence.")
             continue
-
-        # A zeroed scored requirement claims nothing. A zeroed gate claims an
-        # explicit violation, so retain and validate the critic's evidence.
-        if candidate.score == 0.0 and candidate.kind == "scored":
-            candidate.evidence = []
+        elif _drops_below_missing_floor(original, correction):
+            _ignore(
+                "unevidenced_missing_downgrade",
+                "downgrading a supported requirement to missing requires new "
+                "evidence.",
+            )
+            continue
 
         # Re-validate against the full resume, not just the retrieved chunks —
         # the critic sees the whole document and may cite outside them.
+        #
+        # This runs before a zeroed scored requirement's evidence is discarded.
+        # Clearing first would let a correction cite anything it liked on the way
+        # to 0.0 and never be held to it, making the evidence requirement above
+        # unenforceable for exactly the score that triggers a rejection.
         candidate = validate_evidence(candidate, [resume_as_chunk])
         # Check evidence_valid directly. validate_evidence zeroes the score when
         # evidence fails, so a `candidate.score > 0` guard here would never fire
@@ -129,6 +136,12 @@ def reflect(
             )
             continue
 
+        # A zeroed scored requirement claims nothing, so it carries no evidence
+        # forward. A zeroed gate claims an explicit violation and keeps the
+        # verified quote that proves it.
+        if candidate.score == 0.0 and candidate.kind == "scored":
+            candidate.evidence = []
+
         if correction.direction == "raised":
             candidate.confidence = max(candidate.confidence, config.CONFIDENCE_FLOOR)
 
@@ -139,6 +152,29 @@ def reflect(
     result.changed_requirements = accepted_corrections
     corrected = list(analysis_map.values())
     return corrected, result
+
+
+def _drops_below_missing_floor(
+    original: RequirementAnalysis,
+    correction: Correction,
+) -> bool:
+    """True when a correction pushes a supported requirement to missing.
+
+    Crossing ``PARTIAL_MATCH_SCORE`` downward is the only correction that turns
+    a human review into an automatic rejection, so it is the one that has to say
+    what it is disputing. A requirement scoring at or above that floor always
+    holds validated evidence, because ``validate_evidence`` zeroes any positive
+    score that does not — so "no relevant evidence at all" contradicts the state
+    the critic is correcting, and an unevidenced claim of it is unfalsifiable.
+
+    Lowering that stays above the floor, or that starts below it, leaves the
+    verdict unchanged and is left to the critic's judgment.
+    """
+    return (
+        original.kind == "scored"
+        and original.score >= config.PARTIAL_MATCH_SCORE
+        and correction.new_score < config.PARTIAL_MATCH_SCORE
+    )
 
 
 def _is_valid_correction(
