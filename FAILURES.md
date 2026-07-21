@@ -6,8 +6,9 @@ the system works reliably.
 
 ## Evaluation Scope
 
-Run on July 21, 2026 against all eight privacy-safe synthetic resumes in
-`evaluation/labeled_set.jsonl`.
+Run against all eight privacy-safe synthetic resumes in
+`evaluation/labeled_set.jsonl`. Each run's timestamp is recorded in the
+`generated_at` field of the results files.
 
 **The full-pipeline column is post-fix**, produced after the reflector guard
 described below. The naive column predates it and was not re-run: `run_naive()`
