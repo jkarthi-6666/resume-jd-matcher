@@ -97,17 +97,29 @@ python evaluation/run_evaluation.py --mode naive \
   --summary evaluation/results_naive.md
 ```
 
+Inspect the accuracy cost of each confidence floor (offline — reads saved JSON,
+makes no model calls):
+
+```bash
+python evaluation/sweep_threshold.py evaluation/results.json
+```
+
 Committed results, all eight cases, July 21 2026:
 
 | | Full pipeline | Naive baseline |
 |---|---:|---:|
 | Completed | 8/8 | 7/8 |
-| Verdict accuracy | 7/8 | emits no verdict |
-| Score mean absolute error | 4.37 | 10.39 |
+| Verdict accuracy | 8/8 | emits no verdict |
+| Score mean absolute error | 0.8 | 10.39 |
 
-These are regression results on a small curated synthetic set, not a measure of
-real-world accuracy. One case (`case_005`) returns different verdicts across
-identical runs, so verdict accuracy on this set is not a stable number. See
+The full-pipeline column comes from post-fix code, after a reflector guard was
+added; the naive column predates it and was not re-run because `run_naive()`
+never invokes the reflector.
+
+**These are regression results on eight curated synthetic cases, not a measure
+of real-world accuracy.** Eight cases built to exercise known routing paths
+cannot establish a rate — one case moving swings the figure by 12.5 points, and
+the provider is known to return different verdicts across identical runs. See
 [FAILURES.md](FAILURES.md) for the measured failures and what remains
 unmeasured.
 

@@ -7,23 +7,35 @@ the system works reliably.
 ## Evaluation Scope
 
 The current baseline was run on July 21, 2026 against all eight privacy-safe
-synthetic resumes in `evaluation/labeled_set.jsonl`, in both full and naive
-modes. This sample is deliberately small and does not represent real recruiting
-traffic, unusual resume formats, or demographic fairness. The results are
-diagnostic, not a production accuracy claim.
+synthetic resumes in `evaluation/labeled_set.jsonl`. This sample is deliberately
+small and does not represent real recruiting traffic, unusual resume formats, or
+demographic fairness. The results are diagnostic, not a production accuracy
+claim.
 
-| Metric | Full pipeline | Naive baseline |
+**These full-pipeline numbers come from post-fix code.** They were produced
+after the reflector guard described under *Measured Failures* was added, and are
+not comparable to the pre-fix numbers recorded there. The naive column predates
+that change and was deliberately not re-run: `run_naive()` is a single model call
+that never invokes the reflector, so the change cannot affect it.
+
+| Metric | Full pipeline (post-fix) | Naive baseline |
 |---|---:|---:|
 | Completed cases | 8/8 | 7/8 |
-| Verdict accuracy | 87.5% (7/8) | n/a — emits no verdict |
-| Score mean absolute error | 4.37 points | 10.39 points |
-| Escalation rate | 37.5% (3/8) | n/a |
+| Verdict accuracy | 100% (8/8) | n/a — emits no verdict |
+| Score mean absolute error | 0.8 points | 10.39 points |
+| Escalation rate | 50% (4/8) | n/a |
 | False accepts | 0 | n/a |
-| False rejects | 1 | n/a |
-| Hallucinated quote rate | 0% (0/13 quotes) | not checked |
+| False rejects | 0 | n/a |
+| Hallucinated quote rate | 0% | not checked |
 | Unsupported positive-match rate | 0% | not checked |
-| Reflection corrections | 0 raised, 1 lowered | n/a |
+| Reflection corrections | 0 raised, 0 lowered, 1 refused | n/a |
 | Planner hallucination rate | 0% | n/a |
+
+**100% on eight curated synthetic cases is not an accuracy claim.** Eight cases
+built to exercise known routing paths, generated from one template by one
+script, cannot establish a rate. One case moving swings this figure by 12.5
+points. The number means the set no longer contains a known regression; it does
+not mean the system is correct.
 
 The raw reports and metric definitions are in `evaluation/results.json`,
 `evaluation/results_naive.json`, and `evaluation/run_evaluation.py`.
@@ -47,7 +59,11 @@ non-deterministic (see *Reflection intermittently collapses weak evidence*).
 
 ## Measured Failures
 
-### Reflection intermittently collapses weak evidence to absent (case_005)
+The first three entries below were measured pre-fix and are now guarded. They
+are kept because the measurement, not the fix, is the evidence — and because the
+underlying model behaviour still occurs and is only being caught.
+
+### Reflection intermittently collapses weak evidence to absent (case_005) — guarded
 
 `case_005` is labeled `needs_review`: the resume shows Python only in coursework
 and a personal project against a JD requiring two years of professional
@@ -66,8 +82,18 @@ attribution:
   precedence rejects. Given the score it received, the router had no other
   option.
 
-This single case accounts for 25.0 of the 30.6 total score error in the run.
-Full-mode score MAE is 4.37 with it and 0.93 without it.
+This single case accounted for 25.0 of the 30.6 total score error in that run.
+Pre-fix full-mode score MAE was 4.37 with it and 0.93 without it.
+
+**Status: guarded, and the model behaviour is unchanged.** A lowering correction
+that crosses `PARTIAL_MATCH_SCORE` downward now requires new evidence
+(`_drops_below_missing_floor` in `src/reflector.py`). In the post-fix run the
+reflector emitted the identical downgrade — its note still reads "Therefore the
+score is lowered to 0.0" — and the guard refused it, recording
+`unevidenced_missing_downgrade`. The score held at 0.25 and the case routed to
+`needs_review`.
+
+The critic still tries to do this. It is being caught, not corrected.
 
 ### The same case returns different verdicts across identical runs
 
@@ -81,32 +107,55 @@ code, PDF and job description. Raw outputs are in `evaluation/variance/`.
 | `variance/case_005_run2.json` | **needs_review** | no correction |
 | `variance/case_005_run3.json` | reject | lowered 0.25 → 0.0 |
 
-Three of four runs reject; one escalates. **Verdict accuracy on this eight-case
-set is therefore not a fixed number** — it oscillates between 7/8 and 8/8
-depending on whether the reflector fires. The 87.5% above is one sample, not a
-stable rate. This also means the previous run's passing result for case_005 is
-not evidence that any code change fixed it.
+Three of four runs reject; one escalates. Pre-fix, **verdict accuracy on this
+eight-case set was not a fixed number** — it oscillated between 7/8 and 8/8
+depending on whether the reflector fired. This also means the older run's
+passing result for case_005 was not evidence that any code change fixed it.
 
-### A lowering correction requires no evidence
+Post-fix, both branches of that coin now converge on `needs_review`: if the
+critic emits the downgrade it is refused, and if it does not the score was
+already 0.25. Each branch has been observed once — the refusal in the post-fix
+run, the no-correction case in `variance/case_005_run2.json`. The convergence is
+an argument from the code path, supported by two observations, not a measured
+stability result. Repeat runs of the whole set would be needed for that.
+
+### A lowering correction requires no evidence — fixed
 
 A `raised` correction must quote new verbatim evidence or it is rejected
-(`reflector.py`). A `lowered` correction that zeroes a scored requirement has
-its evidence cleared before validation, so it passes the evidence check with no
-evidence at all. The critic can zero any scored requirement unchallenged, and
-zeroing is exactly what converts `needs_review` into `reject`. The asymmetry is
+(`reflector.py`). A `lowered` correction that zeroed a scored requirement had its
+evidence cleared before validation, so it passed the evidence check with no
+evidence at all. The critic could zero any scored requirement unchallenged, and
+zeroing is exactly what converts `needs_review` into `reject`. That asymmetry was
 the mechanism behind the case_005 failure above.
 
-### The threshold sweep reports an unreadable resume as an accept
+Two changes close it. A lowering correction that crosses `PARTIAL_MATCH_SCORE`
+downward now requires new evidence, and evidence validation now runs *before* a
+zeroed scored requirement has its evidence discarded — clearing first would have
+let an evidenced downgrade cite anything on the way to 0.0 and never be held to
+it.
 
-`sweep_threshold.py` re-routes saved `all_requirements` at each confidence
+Only the boundary-crossing case is constrained. Lowering that stays above the
+floor, or that starts below it, cannot change the verdict and is still left to
+the critic's judgment. A legitimate "this evidence is irrelevant" correction
+keeps a path: quote the text being disputed, and the quote is substring-checked.
+
+### The threshold sweep reports an unreadable resume as an accept — fixed
+
+`sweep_threshold.py` re-routed saved `all_requirements` at each confidence
 floor. For case_007 that list is empty, because the unassessable-document guard
 short-circuits before any requirement is scored, and `route([])` returns
-`accept`. The sweep therefore reports the most dangerous possible outcome for a
-document the pipeline actually escalated, and understates escalation — 25%
-against the run's true 37.5% at floor 0.7.
+`accept`. The sweep therefore reported the most dangerous possible outcome for a
+document the pipeline actually escalated, and understated escalation — 25%
+against that run's true 37.5% at floor 0.7.
 
-This is a defect in the evaluation tool, not the pipeline. The pipeline routed
-case_007 to `needs_review` correctly.
+This was a defect in the evaluation tool, not the pipeline. The pipeline routed
+case_007 to `needs_review` correctly throughout.
+
+A case that scored no requirements is now treated as threshold-independent: no
+confidence floor can change a verdict decided before scoring, so its recorded
+verdict is used at every floor and the report names which cases those are. The
+sweep now reproduces the evaluator's independently computed metrics exactly at
+the default floor, and diverges from the recorded verdict on no case.
 
 ### The naive baseline cannot handle an unassessable document
 
@@ -139,25 +188,26 @@ This is a guarded decision rule, not probability calibration. Its safety depends
 on retrieval-confidence detection and the critic's ability to notice full-resume
 evidence, both of which remain imperfect.
 
-The current threshold sweep measures escalation rate only. Run against the
-eight-case results:
+The threshold sweep now reports the accuracy cost of each floor, not just
+escalation. Against the post-fix eight-case results:
 
-| Confidence floor | Escalation rate reported |
-|---:|---:|
-| 0.5 | 25.0% (2/8) |
-| 0.6 | 25.0% (2/8) |
-| 0.7 | 25.0% (2/8) |
-| 0.8 | 37.5% (3/8) |
-| 0.9 | 50.0% (4/8) |
+| Confidence floor | Verdict accuracy | False accepts | False rejects | Escalation |
+|---:|---:|---:|---:|---:|
+| 0.5 | 100% (8/8) | 0 | 0 | 50.0% (4/8) |
+| 0.6 | 100% (8/8) | 0 | 0 | 50.0% (4/8) |
+| 0.7 | 100% (8/8) | 0 | 0 | 50.0% (4/8) |
+| 0.8 | 75.0% (6/8) | 0 | 0 | 75.0% (6/8) |
+| 0.9 | 75.0% (6/8) | 0 | 0 | 75.0% (6/8) |
 
-These figures are the tool's raw output and are known to be wrong at every row:
-case_007 is re-routed to `accept` rather than `needs_review`, as described under
-measured failures, so each rate understates escalation by one case. The run's
-true escalation rate at the default 0.7 floor is 37.5%, not the 25% shown here.
+Escalation rate alone could never justify a floor, because escalating everything
+scores zero on both error types. With the error columns beside it the tradeoff is
+at least legible: raising the floor above 0.7 on this set buys nothing and costs
+two correct verdicts, converting them to review.
 
-The sweep also does not calculate verdict accuracy, false accepts, or false
-rejects at each threshold, so it cannot identify an optimal floor. It is
-currently decoration rather than a tuning tool.
+**This table is not a basis for tuning.** Eight cases cannot calibrate a
+threshold, the rows are flat across 0.5–0.7 because no case sits near the
+boundary, and every row is one sample from a provider that is known to vary. The
+tool is now correct; the sample it is pointed at is still too small to read.
 
 ### Weak-versus-absent evidence remains a judgment boundary
 
@@ -173,18 +223,22 @@ prohibition in its own prompt. The earlier claim that this change "fixed the
 synthetic regression" was based on a single run of a non-deterministic case and
 does not hold.
 
-### Reflection changes scores, and the one change measured was wrong
+### Reflection has never made a correction that improved a verdict
 
-Across the eight-case run, reflection made exactly one correction: the case_005
-lowering that caused the run's only verdict failure. No corrections were raised,
-and no corrections were rejected, so the structured rejection-reason
-instrumentation (evidence substring misses, direction errors, stale scores,
-bounds errors) recorded nothing and remains unexercised by this set.
+Across both eight-case runs, reflection attempted exactly one correction: the
+case_005 downgrade. Pre-fix it was accepted and caused the run's only verdict
+failure. Post-fix the critic attempted the same downgrade and it was refused.
 
-One accepted correction, which was incorrect, is not enough data to claim that
-reflection reliably recovers retrieval misses or corrects inflation. It is
-enough to show that reflection can turn a correct scorer output into a wrong
-verdict.
+Reflection has therefore raised no score, recovered no retrieval miss, and
+corrected no inflation anywhere in this set. Its measured contribution to date is
+one wrong correction, now blocked. That is not evidence the stage is useless —
+this set contains no case built to need recovery — but nothing here supports the
+claim that it recovers misses either.
+
+The structured rejection-reason instrumentation is now exercised for the first
+time, recording `unevidenced_missing_downgrade: 1`. The other reasons (evidence
+substring misses, direction errors, stale scores, bounds errors) still record
+nothing on this set and remain covered only by unit tests.
 
 ### Provider output is not deterministic — measured
 
@@ -352,11 +406,11 @@ statement independently.
       precedence cases 006, 007 and 008.
 - [x] Establish that provider output varies run to run at temperature zero
       (case_005 only; see `evaluation/variance/`).
-- [ ] Fix `sweep_threshold.py` so it does not re-route an unassessable document
+- [x] Fix `sweep_threshold.py` so it does not re-route an unassessable document
       to `accept`, and report verdict accuracy, false accepts, and false rejects
       per threshold.
-- [ ] Stop the reflector lowering weak evidence to absent against its own prompt,
-      and require evidence for lowering corrections as it does for raises.
+- [x] Require evidence for a lowering correction that crosses the missing-score
+      floor, as raises already require it.
 - [ ] Expand evaluation to representative anonymized or consented resumes.
 - [ ] Repeat-run the whole set to put error bars on every reported rate; only
       one of eight cases has been repeat-tested.

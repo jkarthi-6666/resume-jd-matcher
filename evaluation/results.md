@@ -8,17 +8,17 @@
 | Completed Cases | 8 |
 | Skipped Cases | 0 |
 | Failed Cases | 0 |
-| Score Mae | 4.37 |
-| Verdict Accuracy | 0.875 |
-| Escalation Rate | 0.375 |
+| Score Mae | 0.8 |
+| Verdict Accuracy | 1.0 |
+| Escalation Rate | 0.5 |
 | False Accept Count | 0 |
-| False Reject Count | 1 |
+| False Reject Count | 0 |
 | Hallucinated Quote Rate | 0.0 |
 | Unsupported Match Rate | 0.0 |
 | Raised Correction Count | 0 |
-| Lowered Correction Count | 1 |
+| Lowered Correction Count | 0 |
 | Planner Hallucination Rate | 0.0 |
-| Rejected Correction Reason Counts | {} |
+| Rejected Correction Reason Counts | {'unevidenced_missing_downgrade': 1} |
 
 ## Cases
 
