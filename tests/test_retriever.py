@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import patch
 from src.schemas import Chunk
-from src.retriever import HybridRetriever, rrf
+from src.retriever import HybridRetriever, rrf, tokenize
 from tests.conftest import fake_embeddings
 
 
@@ -24,6 +24,41 @@ CHUNKS = [
     _make_chunk("chunk_004", "Managed PostgreSQL and Redis databases."),
     _make_chunk("chunk_005", "B.S. Computer Science, MIT, 2018."),
 ]
+
+
+class TestTokenize:
+    @pytest.mark.parametrize(
+        "text, expected",
+        [
+            ("Python, Java; and Go.", ["python", "java", "and", "go"]),
+            ("(Kubernetes)", ["kubernetes"]),
+            ("“Flask”", ["flask"]),
+        ],
+    )
+    def test_presentation_punctuation_is_dropped(self, text, expected):
+        assert tokenize(text) == expected
+
+    @pytest.mark.parametrize(
+        "text, expected",
+        [
+            ("C++", ["c++"]),
+            ("C#", ["c#"]),
+            (".NET", [".net"]),
+            ("Node.js", ["node.js"]),
+            ("scikit-learn", ["scikit-learn"]),
+            ("Python 3.11", ["python", "3.11"]),
+        ],
+    )
+    def test_names_carrying_punctuation_survive(self, text, expected):
+        """Stripping punctuation wholesale would collapse C++ and C# to "c"."""
+        assert tokenize(text) == expected
+
+    def test_slash_separates_alternatives(self):
+        assert tokenize("CI/CD on k8s/GKE") == ["ci", "cd", "on", "k8s", "gke"]
+
+    def test_quoted_term_matches_bare_term(self):
+        """The bug this fixes: "Python," and "python" were different tokens."""
+        assert tokenize("Python,") == tokenize("python")
 
 
 class TestRRF:
@@ -86,6 +121,20 @@ class TestHybridRetriever:
         ids = [c.chunk_id for c in chunks]
         assert "chunk_001" in ids
         assert "chunk_003" in ids
+
+    def test_bm25_matches_a_term_followed_by_punctuation(self):
+        """A comma after a skill used to make it a different BM25 token."""
+        chunks = [
+            _make_chunk("chunk_listed", "Toolchain: Terraform, Ansible, Consul."),
+            _make_chunk("chunk_other", "Wrote internal documentation."),
+            _make_chunk("chunk_third", "Ran the weekly release meeting."),
+        ]
+        retriever = HybridRetriever()
+        retriever.build(chunks)
+
+        bm25_ranked, _, _, _ = retriever.retrieve("Ansible")
+
+        assert bm25_ranked[0] == "chunk_listed"
 
     def test_query_terms_expand_bm25_but_not_vector_query(self):
         chunks = [
