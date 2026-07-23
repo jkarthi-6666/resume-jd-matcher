@@ -155,6 +155,12 @@ startup. Anthropic has no embedding endpoint, so `EMBED_PROVIDER` falls back to
 ## Project structure
 
 ```
+app.py               Streamlit entry point and pipeline orchestration
+ui/
+  layout.py          Header and analysis input components
+  results.py         Full-pipeline, baseline, and debug result views
+  state.py           Session state and stale-result detection
+  styles.py          Shared design tokens and Streamlit CSS
 src/
   schemas.py       Pydantic models (Literal types throughout)
   docling_processor.py  PDF → Docling document → structure-aware chunks
